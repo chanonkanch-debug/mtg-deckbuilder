@@ -4,10 +4,11 @@ import type { Deck } from '../lib/rules';
 import { COLOR_NAMES, COLORS, curveByColor, manaBase, typeCounts } from '../lib/analysis';
 import { castability, TARGET } from '../lib/castability';
 import { roleCounts } from '../lib/roles';
+import { goldfish, sampleGame, TURNS, type Goldfish as GoldfishResult } from '../lib/goldfish';
 import type { Card } from '../lib/scryfall';
 
-type Tab = 'curve' | 'types' | 'mana' | 'cast' | 'roles';
-const TABS: [Tab, string][] = [['curve', 'Curve'], ['types', 'Types'], ['mana', 'Mana base'], ['cast', 'Castability'], ['roles', 'Roles']];
+type Tab = 'curve' | 'types' | 'mana' | 'cast' | 'roles' | 'goldfish';
+const TABS: [Tab, string][] = [['curve', 'Curve'], ['types', 'Types'], ['mana', 'Mana base'], ['cast', 'Castability'], ['roles', 'Roles'], ['goldfish', 'Goldfish']];
 // Stack order bottom to top. Colors come from the --mana-* tokens in styles.css.
 const STACK = [...COLORS, 'M', 'C'];
 
@@ -32,6 +33,7 @@ export default function DeckStats({ deck, onPreview, onHidePreview, onOpen, onFi
       {tab === 'curve' && <Curve deck={deck} />}
       {tab === 'types' && <Types deck={deck} />}
       {tab === 'mana' && <ManaBase deck={deck} />}
+      {tab === 'goldfish' && <Goldfish deck={deck} />}
       {tab === 'roles' && <Roles deck={deck} onPreview={onPreview} onHidePreview={onHidePreview} onOpen={onOpen} onFindMore={onFindMore} />}
       {tab === 'cast' && <Castability deck={deck} onPreview={onPreview} onHidePreview={onHidePreview} onOpen={onOpen} />}
     </div>
@@ -221,6 +223,80 @@ function Roles({ deck, onPreview, onHidePreview, onOpen, onFindMore }: Props) {
           ? ' Targets follow the Command Zone deck template (37 lands, 10 ramp, 10 draw, 10 removal, 3 board wipes); the line on each bar marks the target.'
           : ' Good numbers depend on the archetype, so there are no targets for 60-card formats.'}
         {' '}Find more searches cards of that role that are legal in this deck.
+      </p>
+    </>
+  );
+}
+
+const GAMES = 2000;
+
+function Goldfish({ deck }: { deck: Deck }) {
+  const result = useMemo(() => goldfish(deck, GAMES), [deck]);
+  const [sample, setSample] = useState<GoldfishResult['sample'] | null>(null);
+  if (!result) return <p className="small muted">Add at least {7 + TURNS} cards to the main deck to simulate games.</p>;
+  const { turns, stuck, commander } = result;
+  const shown = sample ?? result.sample;
+  return (
+    <>
+      <div className="tiles">
+        <div className="tile"><b>{pct(result.mulligan)}</b><span>mulligan</span></div>
+        <div className="tile"><b>{pct(result.screw)}</b><span>mana screw<br /><small>2 or fewer lands on turn 4</small></span></div>
+        <div className="tile"><b>{pct(result.flood)}</b><span>flood<br /><small>8+ lands in the first 12 cards</small></span></div>
+        {commander && (
+          <div className="tile"><b>{commander.avgTurn ? `T${commander.avgTurn.toFixed(1)}` : '—'}</b>
+            <span>average turn you cast {commander.name}<br /><small>{pct(commander.onCurve)} on curve</small></span></div>
+        )}
+      </div>
+      <table className="mana-table goldfish-table">
+        <thead>
+          <tr><th>Turn</th><th>Lands</th><th>Mana available</th><th>Mana used</th><th>Cast nothing</th></tr>
+        </thead>
+        <tbody>
+          {turns.map(t => (
+            <tr key={t.turn}>
+              <td>{t.turn}</td>
+              <td>{t.lands.toFixed(1)}</td>
+              <td>{t.available.toFixed(1)}</td>
+              <td>
+                <span className="use-bar" title={`${t.spent.toFixed(1)} of ${t.available.toFixed(1)} mana used on average`}>
+                  <span style={{ width: `${t.available ? (t.spent / t.available) * 100 : 0}%` }} />
+                </span>
+                {t.spent.toFixed(1)} <span className="muted">({t.available ? pct(t.spent / t.available) : '—'})</span>
+              </td>
+              <td>{pct(t.idle)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {stuck.length > 0 && (
+        <div className="small" style={{ marginTop: 8 }}>
+          <b>Often stuck in hand</b> <span className="muted">(still uncast on turn {TURNS} with spare mana, in games where it was drawn)</span>
+          <ul className="stuck">
+            {stuck.map(s => <li key={s.card.id}>{s.card.name} <ManaText text={s.card.mana_cost} /> <span className="bad-text">{pct(s.rate)}</span></li>)}
+          </ul>
+        </div>
+      )}
+      <details className="sample-game">
+        <summary>Sample game</summary>
+        <div className="row small" style={{ margin: '6px 0' }}>
+          <button type="button" onClick={() => setSample(sampleGame(deck))}>Play another</button>
+          <span className="muted">Opening hand{shown.mulligans ? ` after ${shown.mulligans} mulligan${shown.mulligans > 1 ? 's' : ''}` : ''}: {shown.hand.join(', ')}</span>
+        </div>
+        <ol className="game-log small">
+          {shown.log.map(t => (
+            <li key={t.turn}>
+              <b>Turn {t.turn}</b> <span className="muted">({t.mana} mana)</span>{' '}
+              {t.land ? `Land: ${t.land}.` : <span className="bad-text">No land.</span>}{' '}
+              {t.cast.length ? `Cast ${t.cast.join(', ')}.` : <span className="muted">Nothing cast.</span>}
+            </li>
+          ))}
+        </ol>
+      </details>
+      <p className="small muted">
+        {GAMES.toLocaleString()} games played alone, on the play, with no opponent. Each turn it plays the land that best fixes
+        your colors, then casts mana makers first and the most expensive spell it can afford. It keeps 7-card hands with 2–5
+        lands and mulligans otherwise. Mana rocks, mana creatures, land-search ramp and draw spells are modeled; other card
+        effects are not.
       </p>
     </>
   );
