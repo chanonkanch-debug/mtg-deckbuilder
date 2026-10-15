@@ -15,6 +15,15 @@ export function colorKey(card: Card): string {
   return colors.length === 0 ? 'C' : colors.length > 1 ? 'M' : colors[0];
 }
 
+const COLOR_RANK: Record<string, number> = { W: 0, U: 1, B: 2, R: 3, G: 4, M: 5, C: 6 };
+
+/** Sorts cards W, U, B, R, G, multicolor, colorless, then lands, and by mana value within each.
+ *  The sort is stable, so cards that tie keep the order they came in (the chosen search sort). */
+export function colorCurveSort(cards: Card[]): Card[] {
+  const rank = (c: Card) => (isLand(c) ? 7 : COLOR_RANK[colorKey(c)]);
+  return [...cards].sort((a, b) => rank(a) - rank(b) || a.cmc - b.cmc);
+}
+
 export interface Group { key: string; title: string; board: Board; entries: DeckEntry[]; count: number }
 
 const PLURAL: Record<string, string> = { Sorcery: 'Sorceries', Other: 'Other' };

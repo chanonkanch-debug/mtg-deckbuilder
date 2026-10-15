@@ -3,6 +3,7 @@ import ManaText from './ManaText';
 import { autocomplete, searchCards, searchUrl, type Card } from '../lib/scryfall';
 import { canBeCommander, type Board, type Deck } from '../lib/rules';
 import { buildQuery } from '../lib/filters';
+import { colorCurveSort } from '../lib/analysis';
 import { ZOOM_LEVELS, type Prefs } from '../lib/storage';
 import FilterChips from './FilterChips';
 import SyntaxGuide from './SyntaxGuide';
@@ -13,6 +14,9 @@ import SetPicker from './SetPicker';
 // Results show PAGE_SIZE cards at a time. Scryfall returns up to 175 per request,
 // so the next Scryfall page is only fetched when paging past what is already loaded.
 const PAGE_SIZE = 20;
+// With "Color and curve first" on, up to this many Scryfall pages load together so the grouping
+// covers all of them; pages loaded later are grouped on their own.
+const GROUPED_PAGES = 4;
 // Filter clicks wait briefly so several quick clicks send one search.
 const FILTER_DELAY_MS = 450;
 
@@ -66,6 +70,7 @@ export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, o
   const hasQuery = !!submitted.trim() || filters.size > 0 || sets.size > 0;
   const query = useMemo(() => hasQuery ? buildQuery(deck, { text: submitted, filters, sets, onlyLegal, onlyIdentity, allArts }) : '',
     [hasQuery, deck, submitted, filters, sets, onlyLegal, onlyIdentity, allArts]);
+  const colorCurve = prefs.colorCurve;
   const url = query ? searchUrl({ q: query, order: prefs.order, dir: prefs.dir, allArts }) : null;
   const countIn = (groups: typeof FILTERS) => groups.reduce((n, g) => n + g.options.filter((_, i) => filters.has(`${g.key}:${i}`)).length, 0);
 
@@ -77,8 +82,19 @@ export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, o
       try {
         const { page, cached } = await searchCards(url);
         if (mySeq !== seq.current) return; // a newer search started while this one was loading
-        setResults(page.data);
-        setNextPage(page.has_more ? page.next_page ?? null : null);
+        let cards = page.data;
+        let next = page.has_more ? page.next_page ?? null : null;
+        if (colorCurve) {
+          for (let n = 1; next && n < GROUPED_PAGES; n++) {
+            const more = (await searchCards(next)).page;
+            if (mySeq !== seq.current) return;
+            cards = cards.concat(more.data);
+            next = more.has_more ? more.next_page ?? null : null;
+          }
+          cards = colorCurveSort(cards);
+        }
+        setResults(cards);
+        setNextPage(next);
         setTotal(page.total_cards);
         setPageIdx(0);
         setInfo(page.total_cards
@@ -92,7 +108,7 @@ export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, o
     }, delay.current);
     delay.current = 0;
     return () => clearTimeout(timer);
-  }, [url]);
+  }, [url, colorCurve]);
 
   useEffect(() => {
     if (!request) return;
@@ -124,7 +140,7 @@ export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, o
       try {
         const { page } = await searchCards(nextPage);
         if (mySeq !== seq.current) return;
-        setResults(r => r.concat(page.data));
+        setResults(r => r.concat(colorCurve ? colorCurveSort(page.data) : page.data));
         setNextPage(page.has_more ? page.next_page ?? null : null);
       } catch (err) {
         setInfo(`Search failed: ${(err as Error).message}`);
@@ -217,6 +233,9 @@ export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, o
         <button type="button" title="Toggle sort direction" onClick={() => setPrefs({ dir: prefs.dir === 'asc' ? 'desc' : 'asc' })}>
           {prefs.dir === 'asc' ? '↑ Ascending' : '↓ Descending'}
         </button>
+        <label title="Group results by color (white, blue, black, red, green, multicolor, colorless, lands), then by mana value. The sort you pick orders cards inside each group.">
+          <input type="checkbox" checked={prefs.colorCurve} onChange={e => setPrefs({ colorCurve: e.target.checked })} /> Color and curve first
+        </label>
         <label title="Off: each card once, with its regular art. On: every printing with a different artwork.">
           <input type="checkbox" checked={allArts} onChange={e => setAllArts(e.target.checked)} /> Show alternate arts
         </label>

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Card } from './scryfall';
 import type { Deck, DeckEntry } from './rules';
-import { colorKey, curveByColor, fetchTargets, groupDeck, hypergeometric, landColorCounts, landColors, manaBase, shuffle, typeCounts } from './analysis';
+import { colorCurveSort, colorKey, curveByColor, fetchTargets, groupDeck, hypergeometric, landColorCounts, landColors, manaBase, shuffle, typeCounts } from './analysis';
 
 function card(name: string, over: Partial<Card> = {}): Card {
   return {
@@ -78,5 +78,14 @@ describe('landColorCounts', () => {
     const d = deckOf([[land('Plains', ['W']), { main: 10 }], [land('Hallowed Fountain', ['W', 'U']), { main: 4 }],
       [land('Wastes', ['C']), { main: 2 }], [card('Bolt'), { main: 4 }]]);
     expect(landColorCounts(d)).toEqual({ lands: 16, byColor: [{ color: 'W', count: 14 }, { color: 'U', count: 4 }], colorless: 2 });
+  });
+});
+
+describe('colorCurveSort', () => {
+  const c = (name: string, colors: string[], cmc: number, type_line = 'Creature') => ({ name, colors, cmc, type_line }) as unknown as Card;
+  it('groups by color, then mana value, keeping the incoming order for ties', () => {
+    const cards = [c('Forest', [], 0, 'Basic Land — Forest'), c('Ring', [], 1, 'Artifact'), c('Giant', ['R'], 4), c('Elf', ['G'], 1),
+      c('Bolt', ['R'], 1), c('Shock', ['R'], 1), c('Knight', ['W', 'B'], 2), c('Squire', ['W'], 2), c('Page', ['W'], 1)];
+    expect(colorCurveSort(cards).map(x => x.name)).toEqual(['Page', 'Squire', 'Bolt', 'Shock', 'Giant', 'Elf', 'Knight', 'Ring', 'Forest']);
   });
 });

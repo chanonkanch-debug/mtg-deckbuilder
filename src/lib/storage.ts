@@ -39,8 +39,8 @@ export function deckZoomStyle(scale: number): Record<string, string> {
 
 export type DeckView = 'list' | 'visual';
 export type GroupBy = 'type' | 'mv' | 'color';
-export interface Prefs { dir: 'asc' | 'desc'; zoom: number; deckScale: number; hoverZoom: boolean; order: string; deckView: DeckView; groupBy: GroupBy; detailsTab: string }
-const DEFAULT_PREFS: Prefs = { dir: 'asc', zoom: 2, deckScale: 1, hoverZoom: true, order: 'name', deckView: 'list', groupBy: 'type', detailsTab: 'curve' };
+export interface Prefs { dir: 'asc' | 'desc'; zoom: number; deckScale: number; hoverZoom: boolean; order: string; colorCurve: boolean; deckView: DeckView; groupBy: GroupBy; detailsTab: string }
+const DEFAULT_PREFS: Prefs = { dir: 'asc', zoom: 2, deckScale: 1, hoverZoom: true, order: 'name', colorCurve: true, deckView: 'list', groupBy: 'type', detailsTab: 'curve' };
 
 /** Display preferences (sort, zoom, hover) remembered between visits. */
 export function usePrefs() {
