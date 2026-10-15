@@ -90,3 +90,9 @@
   .setlist img { width: 16px; height: 16px; }
   @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .setlist img { filter: invert(1); } }
   .setlist .code { color: var(--muted); font-size: 11px; text-transform: uppercase; margin-left: auto; white-space: nowrap; }
+  .syntax { border-collapse: collapse; width: 100%; font-size: 12px; }
+  .syntax td { padding: 3px 6px 3px 0; vertical-align: top; border-top: 1px solid var(--border); }
+  .syntax td:first-child { white-space: nowrap; }
+  .syntax .example { font-family: ui-monospace, Menlo, monospace; font-size: 11px; padding: 1px 6px; text-align: left; }
+  .query { margin-top: 6px; overflow-wrap: anywhere; }
+  .query code { color: var(--text); }

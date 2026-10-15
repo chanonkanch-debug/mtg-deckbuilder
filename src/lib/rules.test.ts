@@ -3,6 +3,7 @@ import type { Card } from './scryfall';
 import { checkDeck, copyLimit, deckStats, type Deck, type DeckEntry } from './rules';
 import { exportList, parseList } from './decklist';
 import { buildQuery, filterQuery } from './filters';
+import { ARCHETYPES } from './archetypes';
 
 const legal = { standard: 'legal', pioneer: 'legal', modern: 'legal', legacy: 'legal', vintage: 'legal', pauper: 'legal', commander: 'legal' } as const;
 function card(name: string, over: Partial<Card> = {}): Card {
@@ -83,5 +84,32 @@ describe('search queries', () => {
     const d = deckOf('commander', [[krenko, { cmdr: 1 }]]);
     expect(buildQuery(d, { text: 'goblin', filters: new Set(), sets: new Set(['blb', 'dsk']), onlyLegal: true, onlyIdentity: true }))
       .toBe('goblin (e:blb or e:dsk) f:commander id<=R');
+  });
+});
+
+describe('archetype queries', () => {
+  const balanced = (q: string) => {
+    let depth = 0, inRegex = false, inQuote = false;
+    for (let i = 0; i < q.length; i++) {
+      const ch = q[i];
+      if (ch === '"' && !inRegex) inQuote = !inQuote;
+      else if (ch === '/' && !inQuote && q[i - 1] !== '\\' && (inRegex || q[i - 1] === ':')) inRegex = !inRegex;
+      else if (!inRegex && !inQuote && ch === '(') depth++;
+      else if (!inRegex && !inQuote && ch === ')') depth--;
+      if (depth < 0) return false;
+    }
+    return depth === 0 && !inRegex && !inQuote;
+  };
+  it('every archetype query has balanced quotes, regexes and parentheses', () => {
+    ARCHETYPES.forEach(g => g.options.forEach(([label, q]) => expect(balanced(q), label).toBe(true)));
+  });
+  it('wraps OR queries so they combine safely with other terms', () => {
+    expect(filterQuery(new Set(['strategy:0', 'tribe:0']))).toBe('t:creature mv<=2 pow>=2 (t:goblin or o:goblin)');
+    expect(filterQuery(new Set(['theme:4', 'theme:5']))).toBe('(o:"+1/+1 counter" or (kw:lifelink or o:/whenever you gain life/ or o:/you gain \\d+ life/))');
+  });
+  it('wraps typed text that uses or', () => {
+    const d = deckOf('modern', []);
+    expect(buildQuery(d, { text: 't:elf or t:goblin', filters: new Set(['mv:1']), sets: new Set(), onlyLegal: true, onlyIdentity: false }))
+      .toBe('(t:elf or t:goblin) mv=1 f:modern');
   });
 });

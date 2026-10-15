@@ -4,6 +4,9 @@ import { canBeCommander, type Board, type Deck } from '../lib/rules';
 import { buildQuery } from '../lib/filters';
 import type { Prefs } from '../lib/storage';
 import FilterChips from './FilterChips';
+import SyntaxGuide from './SyntaxGuide';
+import { FILTERS } from '../lib/filters';
+import { ARCHETYPES } from '../lib/archetypes';
 import SetPicker from './SetPicker';
 
 // Results show PAGE_SIZE cards at a time. Scryfall returns up to 175 per request,
@@ -49,10 +52,9 @@ export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, o
 
   // The search is empty until the user types something or picks a filter or set.
   const hasQuery = !!submitted.trim() || filters.size > 0 || sets.size > 0;
-  const url = useMemo(() => hasQuery
-    ? searchUrl({ q: buildQuery(deck, { text: submitted, filters, sets, onlyLegal, onlyIdentity }), order: prefs.order, dir: prefs.dir })
-    : null,
-  [hasQuery, deck, submitted, filters, sets, onlyLegal, onlyIdentity, prefs.order, prefs.dir]);
+  const query = useMemo(() => hasQuery ? buildQuery(deck, { text: submitted, filters, sets, onlyLegal, onlyIdentity }) : '',
+    [hasQuery, deck, submitted, filters, sets, onlyLegal, onlyIdentity]);
+  const url = query ? searchUrl({ q: query, order: prefs.order, dir: prefs.dir }) : null;
 
   useEffect(() => {
     const mySeq = ++seq.current;
@@ -117,6 +119,10 @@ export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, o
     delay.current = FILTER_DELAY_MS;
     setFilters(f => { const n = new Set(f); n.has(id) ? n.delete(id) : n.add(id); return n; });
   };
+  const clearGroups = (keys: string[]) => {
+    delay.current = FILTER_DELAY_MS;
+    setFilters(f => new Set([...f].filter(id => !keys.includes(id.split(':')[0]))));
+  };
   const toggleSet = (code: string) => {
     delay.current = FILTER_DELAY_MS;
     setSets(s => { const n = new Set(s); n.has(code) ? n.delete(code) : n.add(code); return n; });
@@ -146,7 +152,12 @@ export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, o
         <button className="primary" type="submit">Search</button>
       </form>
 
-      <FilterChips active={filters} onToggle={toggleFilter} onClear={() => setFilters(new Set())} />
+      <SyntaxGuide onTry={q => { setText(q); setSubmitted(q); }} />
+      <FilterChips title="Filters" groups={FILTERS} active={filters} onToggle={toggleFilter} onClear={clearGroups} />
+      <FilterChips
+        title="Archetypes" groups={ARCHETYPES} active={filters} onToggle={toggleFilter} onClear={clearGroups}
+        note="Pick a strategy or theme, optionally with a tribe. Hover a button to see the search it runs. These match rules text, so expect some loose results."
+      />
       <SetPicker selected={sets} onToggle={toggleSet} onClear={() => setSets(new Set())} />
 
       <div className="row small" style={{ marginTop: 6 }}>
@@ -175,6 +186,7 @@ export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, o
         </span>
       </div>
 
+      {query && <div className="small muted query">Searching Scryfall for: <code>{query}</code></div>}
       {pager({ marginTop: 8 })}
       <div
         id="results" className="results"
