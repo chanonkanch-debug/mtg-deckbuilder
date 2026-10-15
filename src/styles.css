@@ -210,3 +210,11 @@
   .details-window .deck-stats > .tab-body { flex: 1; overflow: auto; padding: 12px 16px 16px; }
   .details-window .sample { margin-top: 0; }
   @media (max-width: 520px) { .details-overlay { padding: 0; } .details-window { border-radius: 0; height: 100%; } }
+  .details-button { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; margin: 10px 0 4px; padding: 10px 12px; border: 1px solid var(--accent); border-radius: 10px; background: color-mix(in srgb, var(--accent) 10%, var(--panel)); color: var(--text); cursor: pointer; font: inherit; }
+  .details-button:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 18%, var(--panel)); }
+  .details-button:disabled { opacity: .5; cursor: default; }
+  .details-button b { color: var(--accent); display: block; font-size: 14px; }
+  .details-button .small { color: var(--muted); }
+  .details-icon { font-size: 20px; }
+  .details-arrow { margin-left: auto; font-size: 22px; color: var(--accent); }
+  @media (max-width: 520px) { #deckList:not(.visual) .doc-flag { font-size: 0; padding: 0 5px; } #deckList:not(.visual) .doc-flag::before { content: "!"; font-size: 11px; font-weight: 700; } }

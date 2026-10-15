@@ -6,6 +6,8 @@ import { groupDeck, type Group } from '../lib/analysis';
 import { exportList, parseList } from '../lib/decklist';
 import type { Prefs } from '../lib/storage';
 import Checkup, { useDeckSim } from './Checkup';
+import DeckStats, { BASIC_TABS, type Tab } from './DeckStats';
+import DetailsWindow from './DetailsWindow';
 import { cardWarnings, type CardWarning } from '../lib/doctor';
 import type { SearchRequest } from './SearchPanel';
 
@@ -26,6 +28,9 @@ interface Props {
 export default function DeckPanel({ deck, prefs, setPrefs, onAdd, onMove, onReplaceCards, onPreview, onHidePreview, onOpen, toast, onSearch }: Props) {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [showChecks, setShowChecks] = useState(false);
+  const [basicTab, setBasicTab] = useState<Tab>('curve');
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const openDetails = (tab?: string) => { if (tab) setPrefs({ detailsTab: tab }); setDetailsOpen(true); };
   const groups = groupDeck(deck, prefs.groupBy);
   const { sim, busy } = useDeckSim(deck);
   const warnings = useMemo(() => cardWarnings(deck, busy ? null : sim), [deck, sim, busy]);
@@ -40,6 +45,12 @@ export default function DeckPanel({ deck, prefs, setPrefs, onAdd, onMove, onRepl
           {checkDeck(deck).map(([lvl, msg], i) => <li key={i} className={lvl}>{msg}</li>)}
         </ul>
       )}
+
+      <button type="button" className="details-button" onClick={() => openDetails()} disabled={!groups.length}>
+        <span className="details-icon" aria-hidden>📊</span>
+        <span><b>Deck details</b><span className="small"> Castability, roles, simulation and sample hands</span></span>
+        <span className="details-arrow" aria-hidden>›</span>
+      </button>
 
       <div className="deck-toolbar row small">
         <span className="seg" role="group" aria-label="View">
@@ -79,7 +90,17 @@ export default function DeckPanel({ deck, prefs, setPrefs, onAdd, onMove, onRepl
         ))}
       </div>
 
-      <Checkup deck={deck} prefs={prefs} setPrefs={setPrefs} onPreview={onPreview} onHidePreview={onHidePreview} onOpen={onOpen} onSearch={onSearch} sim={sim} busy={busy} />
+      {groups.length > 0 && (
+        <DeckStats deck={deck} tabs={BASIC_TABS} tab={basicTab} setTab={setBasicTab}
+          onPreview={onPreview} onHidePreview={onHidePreview} onOpen={onOpen} onFindMore={archetype => onSearch({ archetype })} />
+      )}
+      <Checkup deck={deck} onOpen={onOpen} onSearch={onSearch}
+        sim={sim} busy={busy} onOpenDetails={openDetails} />
+      {detailsOpen && (
+        <DetailsWindow deck={deck} tab={prefs.detailsTab as Tab} setTab={t => setPrefs({ detailsTab: t })} onClose={() => setDetailsOpen(false)}
+          onPreview={onPreview} onHidePreview={onHidePreview} onOpen={onOpen}
+          onFindMore={archetype => { setDetailsOpen(false); onSearch({ archetype }); }} />
+      )}
       <ImportExport deck={deck} onReplaceCards={onReplaceCards} toast={toast} />
     </section>
   );
@@ -119,7 +140,7 @@ interface RowProps {
 /** Checkup warnings on a card (hard to cast, often stuck); the reason shows on hover. */
 function warningFlags(card: Card, board: Board, warnings: Map<string, CardWarning[]>) {
   if (board === 'side') return null;
-  return (warnings.get(card.id) ?? []).map(w => <span key={w.label} className="flag warn" title={w.detail}>{w.label}</span>);
+  return (warnings.get(card.id) ?? []).map(w => <span key={w.label} className="flag warn doc-flag" title={`${w.label}: ${w.detail}`}>{w.label}</span>);
 }
 
 function legalityFlag(card: Card, format: string) {
