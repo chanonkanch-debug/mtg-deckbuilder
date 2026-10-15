@@ -75,7 +75,7 @@ export default function DeckPanel({ deck, prefs, setPrefs, onAdd, onMove, onRepl
         ))}
       </div>
 
-      <DeckStats deck={deck} />
+      <DeckStats deck={deck} onPreview={onPreview} onHidePreview={onHidePreview} onOpen={onOpen} />
       <SampleHand deck={deck} onPreview={onPreview} onHidePreview={onHidePreview} onOpen={onOpen} />
       <ImportExport deck={deck} onReplaceCards={onReplaceCards} toast={toast} />
     </section>

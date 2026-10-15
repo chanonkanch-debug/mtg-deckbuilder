@@ -1,14 +1,23 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import ManaText from './ManaText';
 import type { Deck } from '../lib/rules';
 import { COLOR_NAMES, COLORS, curveByColor, manaBase, typeCounts } from '../lib/analysis';
+import { castability, TARGET } from '../lib/castability';
+import type { Card } from '../lib/scryfall';
 
-type Tab = 'curve' | 'types' | 'mana';
-const TABS: [Tab, string][] = [['curve', 'Curve'], ['types', 'Types'], ['mana', 'Mana base']];
+type Tab = 'curve' | 'types' | 'mana' | 'cast';
+const TABS: [Tab, string][] = [['curve', 'Curve'], ['types', 'Types'], ['mana', 'Mana base'], ['cast', 'Castability']];
 // Stack order bottom to top. Colors come from the --mana-* tokens in styles.css.
 const STACK = [...COLORS, 'M', 'C'];
 
-export default function DeckStats({ deck }: { deck: Deck }) {
+interface Props {
+  deck: Deck;
+  onPreview: (e: React.MouseEvent, src: string | null) => void;
+  onHidePreview: () => void;
+  onOpen: (card: Card) => void;
+}
+
+export default function DeckStats({ deck, onPreview, onHidePreview, onOpen }: Props) {
   const [tab, setTab] = useState<Tab>('curve');
   return (
     <div className="deck-stats">
@@ -20,6 +29,7 @@ export default function DeckStats({ deck }: { deck: Deck }) {
       {tab === 'curve' && <Curve deck={deck} />}
       {tab === 'types' && <Types deck={deck} />}
       {tab === 'mana' && <ManaBase deck={deck} />}
+      {tab === 'cast' && <Castability deck={deck} onPreview={onPreview} onHidePreview={onHidePreview} onOpen={onOpen} />}
     </div>
   );
 }
@@ -96,6 +106,57 @@ function ManaBase({ deck }: { deck: Deck }) {
       <p className="small muted">
         Suggested lands split your {lands} land{lands === 1 ? '' : 's'} by each color's share of mana symbols in your spells.
         Dual lands count toward every color they make. Highlighted counts are below the suggestion.
+      </p>
+    </>
+  );
+}
+
+const pct = (p: number) => `${Math.round(p * 100)}%`;
+const level = (p: number) => (p >= TARGET ? 'ok' : p >= 0.8 ? 'warn' : 'bad');
+
+function Castability({ deck, onPreview, onHidePreview, onOpen }: Props) {
+  const { rows, landDrops, lands, deckSize } = useMemo(() => castability(deck), [deck]);
+  if (deckSize < 7) return <p className="small muted">Add at least 7 cards to the main deck to check castability.</p>;
+  if (!rows.length) return <p className="small muted">Add colored spells to see how reliably you can cast them.</p>;
+  const below = rows.filter(r => r.odds < TARGET).length;
+  return (
+    <>
+      <p className="small cast-summary">
+        <b className={below ? 'bad' : 'ok'}>{below ? `${below} of ${rows.length} spells below ${pct(TARGET)}` : `All ${rows.length} spells at ${pct(TARGET)} or better`}</b>
+        <span className="muted"> · {lands} lands in {deckSize} cards · hitting land drops: {landDrops.map(d => `turn ${d.turn} ${pct(d.odds)}`).join(', ')}</span>
+      </p>
+      <table className="mana-table cast-table" onMouseLeave={onHidePreview}>
+        <thead>
+          <tr><th>Card</th><th>Turn</th><th>On curve</th><th>To reach {pct(TARGET)}</th></tr>
+        </thead>
+        <tbody>
+          {rows.map(r => (
+            <tr key={r.card.id} onContextMenu={e => { e.preventDefault(); onOpen(r.card); }}>
+              <td>
+                <span className="name" onMouseMove={e => onPreview(e, r.card.img_large || r.card.img || null)}>{r.card.name}</span>{' '}
+                <ManaText className="cost" text={r.card.mana_cost} />
+              </td>
+              <td>{r.turn}</td>
+              <td><span className={`cast-odds ${level(r.odds)}`}>{pct(r.odds)}</span></td>
+              <td className="small">
+                {r.odds >= TARGET ? <span className="muted">OK</span>
+                  : r.short.length ? r.short.map(s => (
+                    <div key={s.color}>
+                      {s.need === null
+                        ? <>Not reachable with {lands} lands (<ManaText text={`{${s.color}}`} /> {s.have})</>
+                        : <>{s.need - s.have} more <ManaText text={`{${s.color}}`} /> source{s.need - s.have === 1 ? '' : 's'} ({s.have} → {s.need})</>}
+                    </div>
+                  ))
+                  : <span className="muted">More lands that make both colors</span>}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="small muted">
+        The chance you have the right colors to cast each spell on the turn equal to its mana value, on the play, assuming you hit
+        every land drop. {pct(TARGET)} is Frank Karsten's guideline for a reliable mana base. Only lands count as sources;
+        mana rocks, dorks and fetch lands are not counted toward colors.
       </p>
     </>
   );
