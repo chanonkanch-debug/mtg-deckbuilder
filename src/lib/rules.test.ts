@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { searchUrl, type Card } from './scryfall';
 import { checkDeck, copyLimit, deckStats, type Deck, type DeckEntry } from './rules';
-import { exportList, parseList } from './decklist';
+import { exportArena, exportList, parseList } from './decklist';
 import { buildQuery, filterQuery, REGULAR_PRINTS } from './filters';
 import { ARCHETYPES } from './archetypes';
 
@@ -72,6 +72,15 @@ describe('decklists', () => {
   it('exports what it imports', () => {
     const d = deckOf('modern', [[card('Bolt'), { main: 4, side: 1 }]]);
     expect(exportList(d)).toBe('4 Bolt\n\nSideboard\n1 Bolt');
+  });
+  it('exports in MTG Arena format', () => {
+    const d = deckOf('pioneer', [
+      [card('Lightning Bolt', { set: 'sta', cn: '42', arena: true }), { main: 4, side: 0 }],
+      [card('Delver of Secrets // Insectile Aberration', { set: 'mid', cn: '47', layout: 'transform', arena: true }), { main: 2, side: 0 }],
+      [card('Fire // Ice', { set: 'mh2', cn: '290', layout: 'split', arena: false }), { main: 1, side: 0 }],
+      [card('Shock', { set: 'dom', cn: '144', arena: true }), { main: 0, side: 3 }],
+    ]);
+    expect(exportArena(d)).toBe('Deck\n4 Lightning Bolt (STA) 42\n2 Delver of Secrets (MID) 47\n1 Fire // Ice\n\nSideboard\n3 Shock (DAR) 144');
   });
 });
 

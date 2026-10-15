@@ -29,6 +29,10 @@ export interface Card {
   set?: string;
   set_name?: string;
   rarity?: string;
+  /** Collector number, layout and whether this printing is on MTG Arena, for the Arena export. Missing on older saved decks. */
+  cn?: string;
+  layout?: string;
+  arena?: boolean;
   pt: string;
 }
 
@@ -175,6 +179,9 @@ export function slimCard(c: any): Card {
     set: c.set,
     set_name: c.set_name,
     rarity: c.rarity,
+    cn: c.collector_number,
+    layout: c.layout,
+    arena: c.games ? c.games.includes('arena') : undefined,
     pt: c.power != null ? `${c.power}/${c.toughness}` : c.loyalty ? `Loyalty ${c.loyalty}` : '',
   };
 }

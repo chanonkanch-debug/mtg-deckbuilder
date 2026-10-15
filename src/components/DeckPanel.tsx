@@ -3,7 +3,7 @@ import ManaText from './ManaText';
 import { fetchCollection, type Card } from '../lib/scryfall';
 import { checkDeck, deckStats, FORMAT_RULES, type Board, type Deck, type DeckEntry } from '../lib/rules';
 import { groupDeck, landColorCounts, type Group } from '../lib/analysis';
-import { exportList, parseList } from '../lib/decklist';
+import { exportArena, exportList, parseList } from '../lib/decklist';
 import { DECK_SCALES, deckScaleIndex, deckZoomStyle, type Prefs } from '../lib/storage';
 import Checkup, { useDeckSim } from './Checkup';
 import DeckStats, { BASIC_TABS, type Tab } from './DeckStats';
@@ -270,7 +270,7 @@ function ImportExport({ deck, onReplaceCards, toast }: Pick<Props, 'deck' | 'onR
   }
 
   async function copy() {
-    const t = exportList(deck);
+    const t = text.trim() ? text : exportList(deck);
     setText(t);
     try { await navigator.clipboard.writeText(t); toast('Decklist copied.'); } catch { toast('Copy failed; select the text instead.'); }
   }
@@ -286,6 +286,7 @@ function ImportExport({ deck, onReplaceCards, toast }: Pick<Props, 'deck' | 'onR
       <div className="row" style={{ marginTop: 6 }}>
         <button className="primary" disabled={busy} onClick={importList}>{busy ? 'Importing…' : 'Import'}</button>
         <button onClick={() => setText(exportList(deck))}>Export to text</button>
+        <button onClick={() => setText(exportArena(deck))} title="Paste into MTG Arena with Import in the Decks screen">Export for MTG Arena</button>
         <button onClick={copy}>Copy</button>
       </div>
     </details>
