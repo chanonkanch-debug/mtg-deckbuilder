@@ -1,0 +1,87 @@
+import { describe, expect, it } from 'vitest';
+import type { Card } from './scryfall';
+import { checkDeck, copyLimit, deckStats, type Deck, type DeckEntry } from './rules';
+import { exportList, parseList } from './decklist';
+import { buildQuery, filterQuery } from './filters';
+
+const legal = { standard: 'legal', pioneer: 'legal', modern: 'legal', legacy: 'legal', vintage: 'legal', pauper: 'legal', commander: 'legal' } as const;
+function card(name: string, over: Partial<Card> = {}): Card {
+  return {
+    id: name, name, mana_cost: '{R}', cmc: 1, type_line: 'Instant', oracle_text: '', colors: ['R'], color_identity: ['R'],
+    legalities: { ...legal }, img: '', img_small: '', img_large: '', img_back: '', usd: '1.00', pt: '', ...over,
+  };
+}
+function deckOf(format: Deck['format'], entries: [Card, Partial<DeckEntry>][]): Deck {
+  const cards: Record<string, DeckEntry> = {};
+  entries.forEach(([c, e]) => { cards[c.id] = { card: c, main: 0, side: 0, cmdr: 0, ...e }; });
+  return { id: 'd', name: 'Test', format, cards };
+}
+const mountain = card('Mountain', { type_line: 'Basic Land — Mountain', mana_cost: '', cmc: 0 });
+
+describe('copyLimit', () => {
+  it('handles basics, any-number cards, restricted and normal cards', () => {
+    expect(copyLimit(mountain, 'modern')).toBe(Infinity);
+    expect(copyLimit(card('Relentless Rats', { oracle_text: 'A deck can have any number of cards named Relentless Rats.' }), 'modern')).toBe(Infinity);
+    expect(copyLimit(card('Seven Dwarves', { oracle_text: 'A deck can have up to seven cards named Seven Dwarves.' }), 'modern')).toBe(7);
+    expect(copyLimit(card('Sol Ring', { legalities: { ...legal, vintage: 'restricted' } }), 'vintage')).toBe(1);
+    expect(copyLimit(card('Shock'), 'modern')).toBe(4);
+    expect(copyLimit(card('Shock'), 'commander')).toBe(1);
+  });
+});
+
+describe('checkDeck', () => {
+  it('passes a legal 60-card deck', () => {
+    const d = deckOf('modern', [[card('Bolt'), { main: 4 }], [mountain, { main: 56 }]]);
+    expect(checkDeck(d)).toEqual([['ok', 'Deck is legal for modern.']]);
+  });
+  it('flags size, legality and copy limits', () => {
+    const d = deckOf('standard', [[card('Bolt', { legalities: { ...legal, standard: 'not_legal' } }), { main: 5 }]]);
+    const msgs = checkDeck(d).map(i => i[1]);
+    expect(msgs).toContain('Main deck has 5 cards; 60 minimum.');
+    expect(msgs).toContain('Bolt is not legal in standard.');
+    expect(msgs).toContain('Bolt: 5 copies, limit is 4.');
+  });
+  it('checks commander color identity', () => {
+    const krenko = card('Krenko', { type_line: 'Legendary Creature — Goblin' });
+    const counter = card('Counterspell', { color_identity: ['U'] });
+    const msgs = checkDeck(deckOf('commander', [[krenko, { cmdr: 1 }], [counter, { main: 1 }]])).map(i => i[1]);
+    expect(msgs).toContain("Counterspell is outside your commander's color identity (U).");
+  });
+});
+
+describe('deckStats', () => {
+  it('builds the curve from nonland main deck cards', () => {
+    const s = deckStats(deckOf('modern', [[card('Bolt'), { main: 4 }], [card('Big', { cmc: 9, mana_cost: '{7}{G}{G}' }), { main: 1 }], [mountain, { main: 20 }]]));
+    expect(s.curve).toEqual([0, 4, 0, 0, 0, 0, 0, 1]);
+    expect(s.lands).toBe(20);
+    expect(s.pips.R).toBe(4);
+    expect(s.pips.G).toBe(2); // two {G} symbols on one card
+  });
+});
+
+describe('decklists', () => {
+  it('parses sections, prefixes and set codes', () => {
+    expect(parseList('Commander\n1 Krenko\n\nDeck\n4x Lightning Bolt (M10) 146\nSB: 2 Shock\nSideboard\n3 Mountain')).toEqual([
+      { qty: 1, name: 'Krenko', set: undefined, board: 'cmdr' },
+      { qty: 4, name: 'Lightning Bolt', set: 'm10', board: 'main' },
+      { qty: 2, name: 'Shock', set: undefined, board: 'side' },
+      { qty: 3, name: 'Mountain', set: undefined, board: 'side' },
+    ]);
+  });
+  it('exports what it imports', () => {
+    const d = deckOf('modern', [[card('Bolt'), { main: 4, side: 1 }]]);
+    expect(exportList(d)).toBe('4 Bolt\n\nSideboard\n1 Bolt');
+  });
+});
+
+describe('search queries', () => {
+  it('ORs within a filter group and ANDs across groups', () => {
+    expect(filterQuery(new Set(['mv:1', 'mv:7', 'type:0']))).toBe('(mv=1 or mv>=7) t:creature');
+  });
+  it('adds format, sets and commander identity', () => {
+    const krenko = card('Krenko', { type_line: 'Legendary Creature — Goblin' });
+    const d = deckOf('commander', [[krenko, { cmdr: 1 }]]);
+    expect(buildQuery(d, { text: 'goblin', filters: new Set(), sets: new Set(['blb', 'dsk']), onlyLegal: true, onlyIdentity: true }))
+      .toBe('goblin (e:blb or e:dsk) f:commander id<=R');
+  });
+});
