@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Card } from './lib/scryfall';
 import { clearCache } from './lib/scryfall';
 import type { Board, Deck } from './lib/rules';
-import { loadStore, newDeck, saveStore, usePrefs, type Store } from './lib/storage';
+import { loadStore, newDeck, saveStore, STORE_KEY, usePrefs, type Store } from './lib/storage';
 import DeckBar from './components/DeckBar';
 import SearchPanel, { type SearchRequest } from './components/SearchPanel';
 import DeckPanel from './components/DeckPanel';
@@ -19,13 +19,29 @@ export default function App() {
   const [searchRequest, setSearchRequest] = useState<SearchRequest & { n: number }>();
   const toastTimer = useRef<number>(undefined);
 
-  useEffect(() => saveStore(store), [store]);
   const deck = store.decks[store.current];
 
   const toast = useCallback((msg: string) => {
     setToastMsg(msg);
     clearTimeout(toastTimer.current);
     toastTimer.current = window.setTimeout(() => setToastMsg(''), 3000);
+  }, []);
+
+  const fromOtherTab = useRef(false);
+  useEffect(() => {
+    if (fromOtherTab.current) { fromOtherTab.current = false; return; }
+    if (!saveStore(store)) toast("Couldn't save: the browser's storage is full.");
+  }, [store, toast]);
+  // Another tab saved its decks: load them, keeping this tab's open deck, so this tab doesn't overwrite them.
+  // The loaded copy isn't saved back, or two tabs would keep re-saving each other's open deck.
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== STORE_KEY || !e.newValue) return;
+      fromOtherTab.current = true;
+      setStore(s => { const n = loadStore(); return n.decks[s.current] ? { ...n, current: s.current } : n; });
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
   }, []);
 
   const updateDeck = useCallback((fn: (d: Deck) => Deck) => {

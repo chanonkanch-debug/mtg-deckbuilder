@@ -58,7 +58,7 @@ export default function SampleHand({ deck, onPreview, onHidePreview, onOpen }: P
           {hand.map((c, i) => (
             <div key={i} className="hand-card" onContextMenu={e => { e.preventDefault(); onOpen(c); }}>
               {c.img
-                ? <img src={c.img} alt={c.name} onMouseMove={e => onPreview(e, c.img_large || c.img)} />
+                ? <img src={c.img} alt={c.name} onMouseMove={e => onPreview(e, c.img_large || c.img)} onMouseLeave={onHidePreview} />
                 : <div className="noimg"><b>{c.name}</b></div>}
             </div>
           ))}

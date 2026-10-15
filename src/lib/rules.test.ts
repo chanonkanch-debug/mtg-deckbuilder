@@ -73,6 +73,13 @@ describe('decklists', () => {
     const d = deckOf('modern', [[card('Bolt'), { main: 4, side: 1 }]]);
     expect(exportList(d)).toBe('4 Bolt\n\nSideboard\n1 Bolt');
   });
+  it('reads MTG Arena lists', () => {
+    expect(parseList('About\nName Mono Red\n\nCompanion\n1 Lurrus of the Dream-Den (IKO) 226\n\nDeck\n4 Llanowar Elves (DAR) 168\n1 Name Sticker Goblin')).toEqual([
+      { qty: 1, name: 'Lurrus of the Dream-Den', set: 'iko', board: 'side' },
+      { qty: 4, name: 'Llanowar Elves', set: 'dom', board: 'main' },
+      { qty: 1, name: 'Name Sticker Goblin', set: undefined, board: 'main' },
+    ]);
+  });
   it('exports in MTG Arena format', () => {
     const d = deckOf('pioneer', [
       [card('Lightning Bolt', { set: 'sta', cn: '42', arena: true }), { main: 4, side: 0 }],

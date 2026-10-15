@@ -40,7 +40,7 @@ export default function DeckPanel({ deck, prefs, setPrefs, onAdd, onMove, onRepl
   const { sim, busy } = useDeckSim(deck);
   const warnings = useMemo(() => cardWarnings(deck, busy ? null : sim), [deck, sim, busy]);
   const toggleGroup = (key: string) => setCollapsed(c => { const n = new Set(c); n.has(key) ? n.delete(key) : n.add(key); return n; });
-  const rowProps = { format: deck.format, onAdd, onMove, onPreview, onOpen, warnings };
+  const rowProps = { format: deck.format, onAdd, onMove, onPreview, onHidePreview, onOpen, warnings };
 
   return (
     <section className="panel" id="deckPanel">
@@ -119,9 +119,9 @@ export default function DeckPanel({ deck, prefs, setPrefs, onAdd, onMove, onRepl
       <Checkup deck={deck} onOpen={onOpen} onSearch={onSearch}
         sim={sim} busy={busy} onOpenDetails={openDetails} />
       {detailsOpen && (
-        <DetailsWindow deck={deck} tab={prefs.detailsTab as Tab} setTab={t => setPrefs({ detailsTab: t })} onClose={() => setDetailsOpen(false)}
+        <DetailsWindow deck={deck} tab={prefs.detailsTab as Tab} setTab={t => setPrefs({ detailsTab: t })} onClose={() => { setDetailsOpen(false); onHidePreview(); }}
           onPreview={onPreview} onHidePreview={onHidePreview} onOpen={onOpen}
-          onFindMore={archetype => { setDetailsOpen(false); onSearch({ archetype }); }} />
+          onFindMore={archetype => { setDetailsOpen(false); onHidePreview(); onSearch({ archetype }); }} />
       )}
       <ImportExport deck={deck} onReplaceCards={onReplaceCards} toast={toast} />
     </section>
@@ -166,7 +166,7 @@ function SummaryBar({ deck, showChecks, onToggleChecks }: { deck: Deck; showChec
 
 interface RowProps {
   format: string;
-  onAdd: Props['onAdd']; onMove: Props['onMove']; onPreview: Props['onPreview']; onOpen: Props['onOpen'];
+  onAdd: Props['onAdd']; onMove: Props['onMove']; onPreview: Props['onPreview']; onHidePreview: Props['onHidePreview']; onOpen: Props['onOpen'];
   warnings: Map<string, CardWarning[]>;
 }
 
@@ -204,11 +204,11 @@ const openOnRightClick = (card: Card, onOpen: (c: Card) => void) => (ev: React.M
   onOpen(card);
 };
 
-function DeckRow({ entry: e, board, format, onAdd, onMove, onPreview, onOpen, warnings }: RowProps & { entry: DeckEntry; board: Board }) {
+function DeckRow({ entry: e, board, format, onAdd, onMove, onPreview, onHidePreview, onOpen, warnings }: RowProps & { entry: DeckEntry; board: Board }) {
   return (
     <li onContextMenu={openOnRightClick(e.card, onOpen)}>
       <span className="qty">{e[board]}</span>
-      <span className="name" onMouseMove={ev => onPreview(ev, e.card.img_large || e.card.img || null)}>{e.card.name}</span>
+      <span className="name" onMouseMove={ev => onPreview(ev, e.card.img_large || e.card.img || null)} onMouseLeave={onHidePreview}>{e.card.name}</span>
       {legalityFlag(e.card, format)}
       {warningFlags(e.card, board, warnings)}
       <ManaText className="cost" text={e.card.mana_cost} />
@@ -218,13 +218,13 @@ function DeckRow({ entry: e, board, format, onAdd, onMove, onPreview, onOpen, wa
 }
 
 /** Card images stacked so each card's title bar shows; hovering a card lifts it and shows its controls. */
-function VisualGroup({ group, format, onAdd, onMove, onPreview, onOpen, warnings }: RowProps & { group: Group }) {
+function VisualGroup({ group, format, onAdd, onMove, onPreview, onHidePreview, onOpen, warnings }: RowProps & { group: Group }) {
   return (
     <div className="stack">
       {group.entries.map(e => (
         <div className="stack-card" key={e.card.id} onContextMenu={openOnRightClick(e.card, onOpen)}>
           {e.card.img
-            ? <img src={e.card.img} alt={e.card.name} loading="lazy" onMouseMove={ev => onPreview(ev, e.card.img_large || e.card.img)} />
+            ? <img src={e.card.img} alt={e.card.name} loading="lazy" onMouseMove={ev => onPreview(ev, e.card.img_large || e.card.img)} onMouseLeave={onHidePreview} />
             : <div className="noimg"><b>{e.card.name}</b><br /><ManaText text={e.card.mana_cost} /></div>}
           <span className="stack-qty">{e[group.board]}×</span>
           {(legalityFlag(e.card, format) || (group.board !== 'side' && warnings.has(e.card.id))) && (

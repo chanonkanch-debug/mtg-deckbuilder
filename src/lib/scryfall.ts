@@ -85,10 +85,12 @@ export function api<T = any>(pathOrUrl: string, options: RequestInit = {}): Prom
 
 // ---------- Response cache ----------
 // Scryfall updates card data about once a day, so cached GET results are reused for 24 hours.
-// Recent results live in memory; up to CACHE_MAX entries also persist in localStorage across visits.
+// Recent results live in memory; up to CACHE_MAX entries (and CACHE_MAX_CHARS in total) also persist in
+// localStorage across visits, leaving most of the browser's ~5M characters for saved decks.
 const CACHE_PREFIX = 'mtg-deck-builder:cache:';
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const CACHE_MAX = 60;
+const CACHE_MAX_CHARS = 1_500_000;
 interface CacheEntry { t: number; v: unknown }
 const memCache = new Map<string, CacheEntry>();
 
@@ -101,6 +103,9 @@ function cacheKeys(): string[] {
     }
   } catch {}
   return keys;
+}
+function cacheChars(): number {
+  return cacheKeys().reduce((n, k) => { try { return n + (localStorage.getItem(k)?.length || 0); } catch { return n; } }, 0);
 }
 function evictOldest(): boolean {
   const entries = cacheKeys().map(k => {
@@ -130,6 +135,7 @@ export function cacheWrite(key: string, value: unknown, persist: boolean) {
       localStorage.setItem(CACHE_PREFIX + key, JSON.stringify(entry));
       let n = cacheKeys().length;
       while (n-- > CACHE_MAX && evictOldest());
+      while (cacheChars() > CACHE_MAX_CHARS && evictOldest());
       return;
     } catch {
       if (!evictOldest()) return; // storage full: drop the oldest entry and retry
@@ -245,13 +251,22 @@ export async function fetchSets(): Promise<SetInfo[]> {
 export interface CollectionId { name: string; set?: string }
 
 /** Looks up cards by name in batches of 75 (Scryfall's limit for /cards/collection). */
+/** Looks up cards by name (and set, when given). A card not found in the given set is looked up again by name only,
+ *  since lists from other apps can use set codes Scryfall doesn't know. */
 export async function fetchCollection(ids: CollectionId[]): Promise<{ found: Card[]; notFound: string[] }> {
   const found: Card[] = [];
-  const notFound: string[] = [];
+  const missed: CollectionId[] = [];
   for (let i = 0; i < ids.length; i += 75) {
     const res = await api('/cards/collection', { method: 'POST', body: JSON.stringify({ identifiers: ids.slice(i, i + 75) }) });
-    (res.not_found || []).forEach((nf: CollectionId) => notFound.push(nf.name));
+    (res.not_found || []).forEach((nf: CollectionId) => missed.push(nf));
     res.data.forEach((c: any) => found.push(slimCard(c)));
+  }
+  const retry = missed.filter(m => m.set).map(m => ({ name: m.name }));
+  const notFound = missed.filter(m => !m.set).map(m => m.name);
+  if (retry.length) {
+    const again = await fetchCollection(retry);
+    found.push(...again.found);
+    notFound.push(...again.notFound);
   }
   return { found, notFound };
 }
