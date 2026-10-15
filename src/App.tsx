@@ -14,6 +14,7 @@ export default function App() {
   const [preview, setPreview] = useState<PreviewState | null>(null);
   const [modalCard, setModalCard] = useState<Card | null>(null);
   const [toastMsg, setToastMsg] = useState('');
+  const [searchRequest, setSearchRequest] = useState<{ archetype: string; n: number }>();
   const toastTimer = useRef<number>(undefined);
 
   useEffect(() => saveStore(store), [store]);
@@ -98,6 +99,7 @@ export default function App() {
           onPreview={showPreview}
           onHidePreview={hidePreview}
           onOpen={openCard}
+          request={searchRequest}
         />
         <DeckPanel
           deck={deck}
@@ -110,6 +112,7 @@ export default function App() {
           onHidePreview={hidePreview}
           onOpen={openCard}
           toast={toast}
+          onFindMore={archetype => setSearchRequest(r => ({ archetype, n: (r?.n ?? 0) + 1 }))}
         />
       </main>
       <footer className="small muted">

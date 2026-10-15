@@ -3,14 +3,13 @@
 import type { Card } from './scryfall';
 import type { Deck } from './rules';
 import { entriesOf, primaryType } from './rules';
-import { COLORS } from './analysis';
+import { COLORS, fetchTargets, landColors } from './analysis';
 
 export const TARGET = 0.9;
 const HAND = 7;
 const SAMPLES = 10000;
 
 const isLand = (c: Card) => primaryType(c) === 'Land';
-const landColors = (c: Card) => c.produced_mana ?? c.color_identity;
 
 /**
  * The colored requirements of a mana cost, one set of acceptable colors per symbol.
@@ -96,8 +95,9 @@ function mulberry32(seed: number) {
 
 export function castability(deck: Deck): Castability {
   const entries = entriesOf(deck);
+  const fetch = fetchTargets(deck);
   // The library is the main deck; commanders are cast from the command zone with lands drawn from it.
-  const library: (string[] | null)[] = entries.flatMap(e => Array.from({ length: e.main }, () => (isLand(e.card) ? landColors(e.card) : null)));
+  const library: (string[] | null)[] = entries.flatMap(e => Array.from({ length: e.main }, () => (isLand(e.card) ? landColors(e.card, fetch) : null)));
   const deckSize = library.length;
   const lands = library.filter(Boolean).length;
   const spells = entries.filter(e => (e.main || e.cmdr) && !isLand(e.card) && e.card.cmc > 0)
