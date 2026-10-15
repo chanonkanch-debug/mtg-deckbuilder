@@ -4,7 +4,7 @@ import { clearCache } from './lib/scryfall';
 import type { Board, Deck } from './lib/rules';
 import { loadStore, newDeck, saveStore, usePrefs, type Store } from './lib/storage';
 import DeckBar from './components/DeckBar';
-import SearchPanel from './components/SearchPanel';
+import SearchPanel, { type SearchRequest } from './components/SearchPanel';
 import DeckPanel from './components/DeckPanel';
 import { CardModal, CardPreview, type PreviewState } from './components/CardView';
 
@@ -14,7 +14,7 @@ export default function App() {
   const [preview, setPreview] = useState<PreviewState | null>(null);
   const [modalCard, setModalCard] = useState<Card | null>(null);
   const [toastMsg, setToastMsg] = useState('');
-  const [searchRequest, setSearchRequest] = useState<{ archetype: string; n: number }>();
+  const [searchRequest, setSearchRequest] = useState<SearchRequest & { n: number }>();
   const toastTimer = useRef<number>(undefined);
 
   useEffect(() => saveStore(store), [store]);
@@ -112,7 +112,7 @@ export default function App() {
           onHidePreview={hidePreview}
           onOpen={openCard}
           toast={toast}
-          onFindMore={archetype => setSearchRequest(r => ({ archetype, n: (r?.n ?? 0) + 1 }))}
+          onSearch={req => setSearchRequest(r => ({ ...req, n: (r?.n ?? 0) + 1 }))}
         />
       </main>
       <footer className="small muted">

@@ -5,7 +5,8 @@ import { checkDeck, deckStats, FORMAT_RULES, type Board, type Deck, type DeckEnt
 import { groupDeck, type Group } from '../lib/analysis';
 import { exportList, parseList } from '../lib/decklist';
 import type { Prefs } from '../lib/storage';
-import DeckStats from './DeckStats';
+import Checkup from './Checkup';
+import type { SearchRequest } from './SearchPanel';
 import SampleHand from './SampleHand';
 
 interface Props {
@@ -19,10 +20,10 @@ interface Props {
   onHidePreview: () => void;
   onOpen: (card: Card) => void;
   toast: (msg: string) => void;
-  onFindMore: (archetype: string) => void;
+  onSearch: (req: SearchRequest) => void;
 }
 
-export default function DeckPanel({ deck, prefs, setPrefs, onAdd, onMove, onReplaceCards, onPreview, onHidePreview, onOpen, toast, onFindMore }: Props) {
+export default function DeckPanel({ deck, prefs, setPrefs, onAdd, onMove, onReplaceCards, onPreview, onHidePreview, onOpen, toast, onSearch }: Props) {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [showChecks, setShowChecks] = useState(false);
   const groups = groupDeck(deck, prefs.groupBy);
@@ -76,7 +77,7 @@ export default function DeckPanel({ deck, prefs, setPrefs, onAdd, onMove, onRepl
         ))}
       </div>
 
-      <DeckStats deck={deck} onPreview={onPreview} onHidePreview={onHidePreview} onOpen={onOpen} onFindMore={onFindMore} />
+      <Checkup deck={deck} prefs={prefs} setPrefs={setPrefs} onPreview={onPreview} onHidePreview={onHidePreview} onOpen={onOpen} onSearch={onSearch} />
       <SampleHand deck={deck} onPreview={onPreview} onHidePreview={onHidePreview} onOpen={onOpen} />
       <ImportExport deck={deck} onReplaceCards={onReplaceCards} toast={toast} />
     </section>
