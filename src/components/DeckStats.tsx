@@ -140,7 +140,7 @@ const pct = (p: number) => `${Math.round(p * 100)}%`;
 const level = (p: number) => (reliable(p) ? 'ok' : p >= 0.8 ? 'warn' : 'bad');
 
 function Castability({ deck, onPreview, onHidePreview, onOpen }: Omit<Props, 'onFindMore'>) {
-  const { rows, landDrops, lands, deckSize } = useMemo(() => castability(deck), [deck]);
+  const { rows, landDrops, lands, rocks, deckSize } = useMemo(() => castability(deck), [deck]);
   if (deckSize < 7) return <p className="small muted">Add at least 7 cards to the main deck to check castability.</p>;
   if (!rows.length) return <p className="small muted">Add colored spells to see how reliably you can cast them.</p>;
   const below = rows.filter(r => !reliable(r.odds)).length;
@@ -148,7 +148,7 @@ function Castability({ deck, onPreview, onHidePreview, onOpen }: Omit<Props, 'on
     <>
       <p className="small cast-summary">
         <b className={below ? 'bad' : 'ok'}>{below ? `${below} of ${rows.length} spells below ${pct(RELIABLE)}` : `All ${rows.length} spells at ${pct(RELIABLE)} or better`}</b>
-        <span className="muted"> · {lands} lands in {deckSize} cards · hitting land drops: {landDrops.map(d => `turn ${d.turn} ${pct(d.odds)}`).join(', ')}</span>
+        <span className="muted"> · {lands} lands{rocks > 0 && ` + ${rocks} mana ${rocks === 1 ? 'rock or dork' : 'rocks and dorks'}`} in {deckSize} cards · hitting land drops: {landDrops.map(d => `turn ${d.turn} ${pct(d.odds)}`).join(', ')}</span>
       </p>
       <table className="mana-table cast-table" onMouseLeave={onHidePreview}>
         <thead>
@@ -180,8 +180,8 @@ function Castability({ deck, onPreview, onHidePreview, onOpen }: Omit<Props, 'on
       </table>
       <p className="small muted">
         The chance you have the right colors to cast each spell on the turn equal to its mana value, on the play, assuming you hit
-        every land drop. Green means {pct(RELIABLE)} or better; source suggestions aim for {pct(TARGET)}, Frank Karsten's guideline for a reliable mana base. Only lands count as sources (fetch lands
-        count as the colors they can find); mana rocks and dorks are not counted.
+        every land drop. Green means {pct(RELIABLE)} or better; source suggestions aim for {pct(TARGET)}, Frank Karsten's guideline for a reliable mana base. Lands count as sources (fetch lands
+        count as the colors they can find), and so do mana rocks and dorks for spells that cost more than they do.
       </p>
     </>
   );

@@ -3,6 +3,7 @@
 import type { Card } from './scryfall';
 import type { Deck } from './rules';
 import { entriesOf, playsAsLand } from './rules';
+import { manaMade } from './roles';
 import { colorsFor, COLORS, fetchTargets, landColors, spendLimit } from './analysis';
 
 /** Source suggestions aim for Frank Karsten's 90%. */
@@ -87,7 +88,7 @@ export interface CastRow {
   short: { color: string; have: number; need: number | null }[];
 }
 
-export interface Castability { rows: CastRow[]; landDrops: { turn: number; odds: number }[]; lands: number; deckSize: number }
+export interface Castability { rows: CastRow[]; landDrops: { turn: number; odds: number }[]; lands: number; /** Mana rocks and dorks counted as sources. */ rocks: number; deckSize: number }
 
 /** Small seeded generator so the numbers don't jump around between renders. */
 function mulberry32(seed: number) {
@@ -99,26 +100,51 @@ function mulberry32(seed: number) {
   };
 }
 
+const cache = new WeakMap<Deck, Castability>();
+
+/** Cached per deck object: the checkup, card flags and the Castability tab all ask for the same deck. */
 export function castability(deck: Deck): Castability {
+  let r = cache.get(deck);
+  if (!r) { r = compute(deck); cache.set(deck, r); }
+  return r;
+}
+
+function compute(deck: Deck): Castability {
   const entries = entriesOf(deck);
   const fetch = fetchTargets(deck);
   // The library is the main deck; commanders are cast from the command zone with lands drawn from it.
-  type Land = { colors: string[]; limit: ReturnType<typeof spendLimit> };
-  const library: (Land | null)[] = entries.flatMap(e => {
-    const land = isLand(e.card) ? { colors: landColors(e.card, fetch), limit: spendLimit(e.card) } : null;
-    return Array.from({ length: e.main }, () => land);
+  // Mana rocks and dorks are sources too, for spells cast at least a turn after them (Karsten counts a
+  // Signet as a source for spells that cost more than it).
+  type Land = { kind: 'land'; colors: string[]; limit: ReturnType<typeof spendLimit> };
+  type Rock = { kind: 'rock'; mana: string[][]; turn: number };
+  const library: (Land | Rock | null)[] = entries.flatMap(e => {
+    const made = manaMade(e.card);
+    const item: Land | Rock | null = isLand(e.card) ? { kind: 'land', colors: landColors(e.card, fetch), limit: spendLimit(e.card) }
+      : made.length ? { kind: 'rock', mana: made, turn: Math.max(1, Math.ceil(e.card.cmc)) } : null;
+    return Array.from({ length: e.main }, () => item);
   });
   const deckSize = library.length;
-  const lands = library.filter(Boolean).length;
+  const lands = library.filter(x => x?.kind === 'land').length;
+  const rocks = library.filter(x => x?.kind === 'rock').length;
+  const limited = library.some(x => x?.kind === 'land' && x.limit);
   const spells = entries.filter(e => (e.main || e.cmdr) && !isLand(e.card) && e.card.cmc > 0)
     .map(e => ({ card: e.card, turn: Math.ceil(e.card.cmc), reqs: colorRequirements(e.card.mana_cost) }))
     .filter(s => s.reqs.length);
   const maxTurn = Math.max(4, ...spells.map(s => s.turn));
+  // Sources a spell on `turn` can use: lands seen by then, and rocks seen a turn earlier that cost less than the spell.
+  const sourcesFor = (seen: (Land | Rock | null)[], turn: number, spell: Card): string[][] => {
+    const out: string[][] = [];
+    const rockSeen = Math.min(deckSize, HAND + turn - 2);
+    seen.forEach((x, i) => {
+      if (x?.kind === 'land') out.push(colorsFor(x.colors, x.limit, spell));
+      else if (x?.kind === 'rock' && i < rockSeen && x.turn < turn) out.push(...x.mana);
+    });
+    return out;
+  };
 
   // Simulate opening hands plus draws, and for each spell count the games where you hit your land drops
-  // and whether those lands could pay its colors.
-  // The same seed for every deck, so comparing two versions of a deck (a swap) isn't thrown off by different random draws.
-  const random = mulberry32(0x5eed);
+  // and whether those lands (and rocks) could pay its colors.
+  const random = mulberry32(deckSize * 7919 + lands + rocks * 31);
   const hits = spells.map(() => 0), tries = spells.map(() => 0);
   const dropHits = Array(maxTurn + 1).fill(0);
   if (deckSize >= HAND) {
@@ -129,16 +155,22 @@ export function castability(deck: Deck): Castability {
         const j = i + Math.floor(random() * (deckSize - i));
         [lib[i], lib[j]] = [lib[j], lib[i]];
       }
-      const landsBy: Land[][] = [];
+      const landsBy: number[] = [];
       for (let t = 1; t <= maxTurn; t++) {
-        landsBy[t] = lib.slice(0, Math.min(deckSize, HAND + t - 1)).filter((x): x is Land => !!x);
-        if (landsBy[t].length >= t) dropHits[t]++;
+        landsBy[t] = lib.slice(0, Math.min(deckSize, HAND + t - 1)).filter(x => x?.kind === 'land').length;
+        if (landsBy[t] >= t) dropHits[t]++;
       }
+      // Without spend-limited lands, every spell on the same turn sees the same sources.
+      const byTurn = new Map<number, string[][]>();
       spells.forEach((s, i) => {
-        const seen = landsBy[s.turn];
-        if (seen.length < s.turn) return;
+        if (landsBy[s.turn] < s.turn) return;
         tries[i]++;
-        if (canPay(s.reqs, seen.map(l => colorsFor(l.colors, l.limit, s.card)))) hits[i]++;
+        let src = limited ? undefined : byTurn.get(s.turn);
+        if (!src) {
+          src = sourcesFor(lib.slice(0, Math.min(deckSize, HAND + s.turn - 1)), s.turn, s.card);
+          if (!limited) byTurn.set(s.turn, src);
+        }
+        if (canPay(s.reqs, src)) hits[i]++;
       });
     }
   }
@@ -146,7 +178,8 @@ export function castability(deck: Deck): Castability {
   const rows = spells.map((s, i) => {
     const short = [...new Set(s.reqs.filter(r => r.length === 1).map(r => r[0]))].flatMap(color => {
       const need = s.reqs.filter(r => r.length === 1 && r[0] === color).length;
-      const have = library.filter(l => l && colorsFor(l.colors, l.limit, s.card).includes(color)).length;
+      const have = library.filter(x => x?.kind === 'land' ? colorsFor(x.colors, x.limit, s.card).includes(color)
+        : x?.kind === 'rock' && x.turn < s.turn && x.mana.some(m => m.includes(color))).length;
       const needed = sourcesNeeded(deckSize, lands, need, s.turn);
       return needed === null || needed > have ? [{ color, have, need: needed }] : [];
     });
@@ -154,5 +187,5 @@ export function castability(deck: Deck): Castability {
   }).sort((a, b) => a.odds - b.odds || a.turn - b.turn || a.card.name.localeCompare(b.card.name));
 
   const landDrops = [2, 3, 4].map(t => ({ turn: t, odds: deckSize >= HAND ? dropHits[t] / SAMPLES : 0 }));
-  return { rows, landDrops, lands, deckSize };
+  return { rows, landDrops, lands, rocks, deckSize };
 }
