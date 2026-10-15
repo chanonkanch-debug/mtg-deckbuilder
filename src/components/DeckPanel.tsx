@@ -4,7 +4,7 @@ import { fetchCollection, type Card } from '../lib/scryfall';
 import { checkDeck, deckStats, FORMAT_RULES, type Board, type Deck, type DeckEntry } from '../lib/rules';
 import { groupDeck, landColorCounts, type Group } from '../lib/analysis';
 import { exportList, parseList } from '../lib/decklist';
-import { deckZoomStyle, type Prefs } from '../lib/storage';
+import { deckZoomStyle, ZOOM_LEVELS, type Prefs } from '../lib/storage';
 import Checkup, { useDeckSim } from './Checkup';
 import DeckStats, { BASIC_TABS, type Tab } from './DeckStats';
 import DetailsWindow from './DetailsWindow';
@@ -32,6 +32,7 @@ export default function DeckPanel({ deck, prefs, setPrefs, onAdd, onMove, onRepl
   const [detailsOpen, setDetailsOpen] = useState(false);
   const openDetails = (tab?: string) => { if (tab) setPrefs({ detailsTab: tab }); setDetailsOpen(true); };
   const groups = groupDeck(deck, prefs.groupBy);
+  const deckZoom = Math.min(ZOOM_LEVELS.length - 1, Math.max(0, prefs.deckZoom));
   const { sim, busy } = useDeckSim(deck);
   const warnings = useMemo(() => cardWarnings(deck, busy ? null : sim), [deck, sim, busy]);
   const toggleGroup = (key: string) => setCollapsed(c => { const n = new Set(c); n.has(key) ? n.delete(key) : n.add(key); return n; });
@@ -72,10 +73,15 @@ export default function DeckPanel({ deck, prefs, setPrefs, onAdd, onMove, onRepl
             {collapsed.size ? 'Expand all' : 'Collapse all'}
           </button>
         )}
+        <span className="zoom" aria-label="Deck zoom">
+          <button type="button" title="Smaller deck" disabled={deckZoom === 0} onClick={() => setPrefs({ deckZoom: deckZoom - 1 })}>−</button>
+          <span className="muted">{Math.round(ZOOM_LEVELS[deckZoom] / 140 * 100)}%</span>
+          <button type="button" title="Bigger deck" disabled={deckZoom === ZOOM_LEVELS.length - 1} onClick={() => setPrefs({ deckZoom: deckZoom + 1 })}>+</button>
+        </span>
       </div>
 
       <div id="deckList" className={prefs.deckView === 'visual' ? 'visual' : ''} onMouseLeave={onHidePreview}
-        style={deckZoomStyle(prefs.zoom) as React.CSSProperties}>
+        style={deckZoomStyle(deckZoom) as React.CSSProperties}>
         {groups.length === 0 && <p className="muted">Your deck is empty. Search for cards and click one to add it.</p>}
         {groups.map(g => (
           <div className="deck-group" key={g.key}>

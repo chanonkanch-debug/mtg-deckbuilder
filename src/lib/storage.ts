@@ -24,7 +24,7 @@ export function saveStore(store: Store) {
   try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch {}
 }
 
-/** Card widths in px for each zoom step; the search grid and the deck's visual view share them. 140 is 100%. */
+/** Card widths in px for each zoom step; the search grid and the deck area each have their own zoom step. 140 is 100%. */
 export const ZOOM_LEVELS = [90, 110, 140, 170, 200, 240, 300];
 /** Deck list text size for each zoom step. */
 const LIST_FONT = [12, 13, 14, 15, 16, 18, 20];
@@ -36,8 +36,8 @@ export function deckZoomStyle(zoom: number): Record<string, string> {
 
 export type DeckView = 'list' | 'visual';
 export type GroupBy = 'type' | 'mv' | 'color';
-export interface Prefs { dir: 'asc' | 'desc'; zoom: number; hoverZoom: boolean; order: string; deckView: DeckView; groupBy: GroupBy; detailsTab: string }
-const DEFAULT_PREFS: Prefs = { dir: 'asc', zoom: 2, hoverZoom: true, order: 'name', deckView: 'list', groupBy: 'type', detailsTab: 'curve' };
+export interface Prefs { dir: 'asc' | 'desc'; zoom: number; deckZoom: number; hoverZoom: boolean; order: string; deckView: DeckView; groupBy: GroupBy; detailsTab: string }
+const DEFAULT_PREFS: Prefs = { dir: 'asc', zoom: 2, deckZoom: 2, hoverZoom: true, order: 'name', deckView: 'list', groupBy: 'type', detailsTab: 'curve' };
 
 /** Display preferences (sort, zoom, hover) remembered between visits. */
 export function usePrefs() {
