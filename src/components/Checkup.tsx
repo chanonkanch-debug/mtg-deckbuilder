@@ -17,14 +17,13 @@ interface Props {
 
 /** Simulates the deck after a pause in edits. Results are cached per deck, so the Goldfish tab's run 1 reuses them. */
 export function useDeckSim(deck: Deck): { sim: Goldfish | null; busy: boolean } {
-  const [sim, setSim] = useState<Goldfish | null>(null);
-  const [busy, setBusy] = useState(true);
+  // Busy until the result belongs to this exact deck, so callers never pair a new deck with the old simulation.
+  const [result, setResult] = useState<{ deck: Deck; sim: Goldfish | null } | null>(null);
   useEffect(() => {
-    setBusy(true);
-    const timer = setTimeout(() => { setSim(goldfish(deck, 4000, 0)); setBusy(false); }, 250);
+    const timer = setTimeout(() => setResult({ deck, sim: goldfish(deck, 4000, 0) }), 250);
     return () => clearTimeout(timer);
   }, [deck]);
-  return { sim, busy };
+  return { sim: result?.sim ?? null, busy: result?.deck !== deck };
 }
 
 /** Shown before "Show more"; the rest of the findings are one click away. */

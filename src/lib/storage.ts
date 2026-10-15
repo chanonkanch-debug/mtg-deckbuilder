@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import type { Deck, Format } from './rules';
+import { clearCache } from './scryfall';
 
 // Storage keys match the original single-file app, so existing decks and settings carry over.
-const STORE_KEY = 'mtg-deck-builder:v1';
+export const STORE_KEY = 'mtg-deck-builder:v1';
 const PREFS_KEY = 'mtg-deck-builder:prefs';
 
 export interface Store { current: string; decks: Record<string, Deck> }
@@ -20,8 +21,12 @@ export function loadStore(): Store {
   return { current: d.id, decks: { [d.id]: d } };
 }
 
-export function saveStore(store: Store) {
-  try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch {}
+/** Saves the decks. If storage is full, the search cache is cleared to make room. Returns false if saving still failed. */
+export function saveStore(store: Store): boolean {
+  const json = JSON.stringify(store);
+  try { localStorage.setItem(STORE_KEY, json); return true; } catch {}
+  clearCache();
+  try { localStorage.setItem(STORE_KEY, json); return true; } catch { return false; }
 }
 
 /** Card widths in px for each zoom step; the search grid and the deck area each have their own zoom step. 140 is 100%. */

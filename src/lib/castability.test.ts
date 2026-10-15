@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Card } from './scryfall';
 import type { Deck, DeckEntry } from './rules';
-import { canPay, castability, colorRequirements, sourceOdds, sourcesNeeded } from './castability';
+import { canPay, castCost, castability, colorRequirements, sourceOdds, sourcesNeeded } from './castability';
 
 function card(name: string, over: Partial<Card> = {}): Card {
   return {
@@ -75,5 +75,15 @@ describe('castability', () => {
     expect(odds(deckOf([...base, [signet, 8], [birds, 8], [filler, 16]]))).toBeGreaterThan(odds(deckOf([...base, [filler, 32]])) + 0.1);
     // Birds itself costs {G}, cast on turn 1, so no rock helps it.
     expect(withRocks.rows.find(r => r.card.name === 'Birds of Paradise')!.odds).toBeLessThan(1);
+  });
+});
+
+describe('castCost', () => {
+  it('uses the front half of split cards and the mana value otherwise', () => {
+    const c = (mana_cost: string, cmc: number) => ({ mana_cost, cmc }) as Card;
+    expect(castCost(c('{1}{R} // {1}{U}', 4))).toBe(2);
+    expect(castCost(c('{X}{R}{R} // {2}', 4))).toBe(2);
+    expect(castCost(c('{2/W}{W}', 3))).toBe(3);
+    expect(castCost(c('{3}{G}', 4))).toBe(4);
   });
 });

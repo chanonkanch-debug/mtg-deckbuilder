@@ -20,13 +20,14 @@ const MARK = { better: '▲', worse: '▼', same: '' };
 export default function SwapPreview({ deck, trial, setTrial, sim, onCommit }: Props) {
   const ref = useRef<HTMLElement>(null);
   const after = useMemo(() => applyTrial(deck, trial), [deck, trial]);
-  const [simAfter, setSimAfter] = useState<Goldfish | null>(null);
-  const [busy, setBusy] = useState(true);
+  // Busy until the simulation belongs to this exact "after" deck.
+  const [result, setResult] = useState<{ deck: Deck; sim: Goldfish | null } | null>(null);
   useEffect(() => {
-    setBusy(true);
-    const t = setTimeout(() => { setSimAfter(goldfish(after, 4000, 0)); setBusy(false); }, 150);
+    const t = setTimeout(() => setResult({ deck: after, sim: goldfish(after, 4000, 0) }), 150);
     return () => clearTimeout(t);
   }, [after]);
+  const simAfter = result?.sim ?? null;
+  const busy = result?.deck !== after;
   useEffect(() => { ref.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }, [trial.add?.id, trial.cut?.id]);
 
   const changed = !!(trial.add || trial.cut);

@@ -64,6 +64,7 @@ export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, o
 
   const delay = useRef(0);
   const seq = useRef(0);
+  const shownSeq = useRef(0); // the search the current results and nextPage belong to
   const panelRef = useRef<HTMLElement>(null);
 
   // The search is empty until the user types something or picks a filter or set.
@@ -93,6 +94,7 @@ export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, o
           }
           cards = colorCurveSort(cards);
         }
+        shownSeq.current = mySeq;
         setResults(cards);
         setNextPage(next);
         setTotal(page.total_cards);
@@ -137,6 +139,7 @@ export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, o
     if ((i + 1) * PAGE_SIZE > results.length && nextPage) {
       setPaging(true);
       const mySeq = seq.current;
+      if (mySeq !== shownSeq.current) return; // a new search is on its way; its results replace these
       try {
         const { page } = await searchCards(nextPage);
         if (mySeq !== seq.current) return;

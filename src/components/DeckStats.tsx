@@ -158,7 +158,7 @@ function Castability({ deck, onPreview, onHidePreview, onOpen }: Omit<Props, 'on
           {rows.map(r => (
             <tr key={r.card.id} onContextMenu={e => { e.preventDefault(); onOpen(r.card); }}>
               <td>
-                <span className="name" onMouseMove={e => onPreview(e, r.card.img_large || r.card.img || null)}>{r.card.name}</span>{' '}
+                <span className="name" onMouseMove={e => onPreview(e, r.card.img_large || r.card.img || null)} onMouseLeave={onHidePreview}>{r.card.name}</span>{' '}
                 <ManaText className="cost" text={r.card.mana_cost} />
               </td>
               <td>{r.turn}</td>
@@ -225,7 +225,7 @@ function Roles({ deck, onPreview, onHidePreview, onOpen, onFindMore }: Props) {
                 <p className="muted" style={{ margin: '0 0 4px' }}>{r.role.hint}</p>
                 {r.cards.length
                   ? r.cards.map(({ card, n }) => (
-                    <span key={card.id} className="role-card" onMouseMove={e => onPreview(e, card.img_large || card.img || null)}
+                    <span key={card.id} className="role-card" onMouseMove={e => onPreview(e, card.img_large || card.img || null)} onMouseLeave={onHidePreview}
                       onContextMenu={e => { e.preventDefault(); onOpen(card); }}>
                       {n > 1 && `${n}× `}{card.name}
                     </span>

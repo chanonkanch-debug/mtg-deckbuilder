@@ -4,7 +4,7 @@ import type { Card } from './scryfall';
 import type { Deck } from './rules';
 import { entriesOf, playsAsLand } from './rules';
 import { colorsFor, fetchTargets, landColors, spendLimit, type FetchTargets } from './analysis';
-import { colorRequirements } from './castability';
+import { castCost, colorRequirements } from './castability';
 import { manaMade, rolesOf } from './roles';
 
 export const TURNS = 8;
@@ -46,7 +46,7 @@ function prepare(card: Card, fetch: FetchTargets): SimCard {
     if (d && !/target (player|opponent) draws/.test(text)) draws = WORDS[d[1]];
   }
   return {
-    card, land, cmc: Math.ceil(card.cmc), reqs: colorRequirements(card.mana_cost), makes, rampLands, draws,
+    card, land, cmc: Math.ceil(castCost(card)), reqs: colorRequirements(card.mana_cost), makes, rampLands, draws,
     tapped: land && /enters( the battlefield)? tapped(?! unless)/.test(text) && !/unless|you may pay/.test(text),
     colors: land ? (lc => Object.assign(lc.length ? [...lc] : ['C'], { limit: spendLimit(card) ?? undefined }))(landColors(card, fetch)) : [],
   };

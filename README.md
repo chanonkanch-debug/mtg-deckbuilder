@@ -4,20 +4,39 @@ A Magic: The Gathering deck builder that runs entirely in the browser, using the
 
 ## Features
 
-- Mana and card symbols drawn with Scryfall's symbol images
-- Card search with Scryfall syntax, name autocomplete, and sorting in either direction
-- Quick filters for mana value, card type, color and rarity, plus a set picker
-- 20 results per page, adjustable card size, hover-to-enlarge, and a right-click card view
-- Deck list with main deck, sideboard and commander, grouped by card type
+**Search**
+
+- Card search with Scryfall syntax, name autocomplete, and a built-in syntax guide
+- Quick filters for mana value, card type, color and rarity, archetype filters (ramp, removal, draw and more), and a set picker
+- Results grouped by color and mana value by default, then by the sort you pick (name, price, EDHREC rank and more)
+- Regular art by default, with an option to show alternate arts and a printing picker per card
+- 20 results per page, adjustable card size, hover-to-enlarge, and a card view on right-click
+- **Try** on any result to preview a swap before making it
+
+**Deck**
+
+- Main deck, sideboard and commander, in a list or visual view grouped by type, mana value or color, with its own zoom
 - Legality checks for Standard, Pioneer, Modern, Legacy, Vintage, Pauper and Commander
   (banned or restricted cards, copy limits, deck size, commander color identity)
-- Mana curve, colored pips, land count, average mana value and estimated price
-- Decklist import and export (`4 Lightning Bolt`, with `Sideboard` / `Commander` sections)
+- Curve, types and mana base on the page, with land counts per color
+- Deck checkup: the few things most worth fixing, each with a one-click action, and what changed since your last edit
+- Decklist import and export (`4 Lightning Bolt`, with `Sideboard` / `Commander` sections), plus an MTG Arena export
 - Decks are saved in the browser's localStorage
+
+**Deck details**
+
+- Castability: each spell's chance of having its colors on curve (Frank Karsten's method), counting lands, fetches,
+  limited any-color lands, mana rocks and dorks, and how many more sources would reach 90%
+- Roles: ramp, draw, removal, wipes, counterspells and tutors, compared with the Command Zone template for Commander
+- Simulation: 4,000 goldfish games for land stalls, flood, mulligans, mana used and the turn your commander comes down
+- Sample hands
+- Swap preview: the same numbers before and after adding or cutting a card
 
 Requests to Scryfall are spaced 100 ms apart as Scryfall asks, and GET responses are cached for 24 hours.
 
 ## Roadmap
+
+**Phase 1** is done; see [APPJOURNEY.md](APPJOURNEY.md) for what was built and what's left.
 
 **Phase 2** (planned, not started)
 

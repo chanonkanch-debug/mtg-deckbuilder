@@ -34,6 +34,18 @@ export function colorRequirements(cost: string): string[][] {
   return reqs;
 }
 
+/** The mana value to cast a card on curve. Scryfall gives split cards like Fire // Ice the total of both halves (4),
+ *  but you cast one half, so this uses the front half's cost ({1}{R} is 2). */
+export function castCost(card: Card): number {
+  if (!card.mana_cost.includes(' // ')) return card.cmc;
+  let n = 0;
+  for (const [, sym] of card.mana_cost.split(' // ')[0].matchAll(/\{([^}]+)\}/g)) {
+    if (/^\d+$/.test(sym)) n += +sym;
+    else if (sym !== 'X') n += /^2\//.test(sym) ? 2 : 1;
+  }
+  return n;
+}
+
 /** Whether the lands (each a list of colors it makes) can pay every requirement, one land per symbol. */
 export function canPay(reqs: string[][], lands: string[][]): boolean {
   const owner: number[] = Array(lands.length).fill(-1);
@@ -127,8 +139,8 @@ function compute(deck: Deck): Castability {
   const lands = library.filter(x => x?.kind === 'land').length;
   const rocks = library.filter(x => x?.kind === 'rock').length;
   const limited = library.some(x => x?.kind === 'land' && x.limit);
-  const spells = entries.filter(e => (e.main || e.cmdr) && !isLand(e.card) && e.card.cmc > 0)
-    .map(e => ({ card: e.card, turn: Math.ceil(e.card.cmc), reqs: colorRequirements(e.card.mana_cost) }))
+  const spells = entries.filter(e => (e.main || e.cmdr) && !isLand(e.card) && castCost(e.card) > 0)
+    .map(e => ({ card: e.card, turn: Math.ceil(castCost(e.card)), reqs: colorRequirements(e.card.mana_cost) }))
     .filter(s => s.reqs.length);
   const maxTurn = Math.max(4, ...spells.map(s => s.turn));
   // Sources a spell on `turn` can use: lands seen by then, and rocks seen a turn earlier that cost less than the spell.
