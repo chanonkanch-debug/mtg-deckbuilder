@@ -24,6 +24,15 @@ describe('goldfish', () => {
     expect(pay([['U'], ['U']], 2, [['U', 'R'], ['R']])).toBeNull();
   });
 
+  it("keeps a land's limited mana for the spells it can cast", () => {
+    const ziggurat = Object.assign(['W', 'U', 'B', 'R', 'G'], { limit: (s: Card) => /Creature/.test(s.type_line) });
+    const bear = card('Bear', { mana_cost: '{1}{R}', cmc: 2, type_line: 'Creature' });
+    const shock = card('Shock', { mana_cost: '{R}', cmc: 1 });
+    expect(pay([['R']], 2, [ziggurat, ['C']], bear)).toEqual([]);
+    expect(pay([['R']], 1, [ziggurat], shock)).toBeNull();
+    expect(pay([], 1, [ziggurat, ['C']], shock)).toEqual([ziggurat]);
+  });
+
   it('plays a simple 60-card deck sensibly', () => {
     const two = card('Bear', { mana_cost: '{1}{R}', cmc: 2, type_line: 'Creature' });
     const three = card('Ogre', { mana_cost: '{2}{R}', cmc: 3, type_line: 'Creature' });

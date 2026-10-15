@@ -3,15 +3,15 @@
 import type { Card } from './scryfall';
 import type { Deck } from './rules';
 import { entriesOf, playsAsLand } from './rules';
-import { fetchTargets, landColors, type FetchTargets } from './analysis';
+import { colorsFor, fetchTargets, landColors, spendLimit, type FetchTargets } from './analysis';
 import { colorRequirements } from './castability';
 import { rolesOf } from './roles';
 
 export const TURNS = 8;
 const HAND = 7;
 
-/** One mana: the colors it can be spent as ('C' for colorless). */
-type Mana = string[];
+/** One mana: the colors it can be spent as ('C' for colorless), and which spells its colored mana can cast if limited. */
+type Mana = string[] & { limit?: (spell: Card) => boolean };
 
 interface SimCard {
   card: Card;
@@ -60,7 +60,7 @@ function prepare(card: Card, fetch: FetchTargets): SimCard {
   return {
     card, land, cmc: Math.ceil(card.cmc), reqs: colorRequirements(card.mana_cost), makes, rampLands, draws,
     tapped: land && /enters( the battlefield)? tapped(?! unless)/.test(text) && !/unless|you may pay/.test(text),
-    colors: land ? (lc => (lc.length ? lc : ['C']))(landColors(card, fetch)) : [],
+    colors: land ? (lc => Object.assign(lc.length ? [...lc] : ['C'], { limit: spendLimit(card) ?? undefined }))(landColors(card, fetch)) : [],
   };
 }
 
@@ -68,15 +68,19 @@ function prepare(card: Card, fetch: FetchTargets): SimCard {
  * Pays a cost from a pool of mana, returning the pool that's left or null if it can't be paid.
  * Colored symbols are matched to mana first; generic is paid with the least flexible mana.
  */
-export function pay(reqs: string[][], cmc: number, pool: Mana[]): Mana[] | null {
-  if (pool.length < cmc) return null;
+export function pay(reqs: string[][], cmc: number, pool: Mana[], spell?: Card): Mana[] | null {
+  // Mana limited to other kinds of spells (Great Hall's colors for a creature) can't be used at all here.
+  const usable = (m: Mana) => (spell ? colorsFor(m, m.limit ?? null, spell) : m);
+  const unusable = pool.filter(m => !usable(m).length);
+  const open = pool.filter(m => usable(m).length);
+  if (open.length < cmc) return null;
   // Narrowest mana first, so flexible mana is saved for later spells. Colorless counts as narrowest.
-  const width = (m: Mana) => (m.length === 1 && m[0] === 'C' ? 0 : m.length);
-  const sorted = [...pool].sort((a, b) => width(a) - width(b));
+  const width = (m: Mana) => (usable(m).length === 1 && usable(m)[0] === 'C' ? 0 : usable(m).length);
+  const sorted = [...open].sort((a, b) => width(a) - width(b));
   const owner: number[] = Array(sorted.length).fill(-1);
   const assign = (r: number, seen: boolean[]): boolean => {
     for (let m = 0; m < sorted.length; m++) {
-      if (seen[m] || !sorted[m].some(c => reqs[r].includes(c))) continue;
+      if (seen[m] || !usable(sorted[m]).some(c => reqs[r].includes(c))) continue;
       seen[m] = true;
       if (owner[m] < 0 || assign(owner[m], seen)) { owner[m] = r; return true; }
     }
@@ -84,7 +88,7 @@ export function pay(reqs: string[][], cmc: number, pool: Mana[]): Mana[] | null 
   };
   if (!reqs.every((_, r) => assign(r, Array(sorted.length).fill(false)))) return null;
   const left = sorted.filter((_, m) => owner[m] < 0);
-  return left.slice(Math.max(0, cmc - reqs.length));
+  return [...unusable, ...left.slice(Math.max(0, cmc - reqs.length))];
 }
 
 export interface TurnStats { turn: number; lands: number; available: number; spent: number; idle: number }
@@ -182,7 +186,7 @@ function playGame(library: SimCard[], commanders: SimCard[], random: () => numbe
     for (let progress = true; progress;) {
       progress = false;
       for (const c of castables()) {
-        const left = pay(c.reqs, c.cmc, pool);
+        const left = pay(c.reqs, c.cmc, pool, c.card);
         if (!left) continue;
         pool = left;
         if (command.includes(c)) { command.splice(command.indexOf(c), 1); cmdrTurn ??= turn; }

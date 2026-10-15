@@ -44,4 +44,18 @@ describe('castability', () => {
     expect(r.rows[1].odds).toBeGreaterThan(0.9);
     expect(r.rows[1].short).toEqual([]);
   });
+
+  it('counts any-color lands, but only for the spells their mana can cast', () => {
+    const hall = card('Great Hall of the Biblioplex', { mana_cost: '', cmc: 0, colors: [], type_line: 'Land', produced_mana: ['C', 'W', 'U', 'B', 'R', 'G'],
+      oracle_text: '{T}: Add {C}.\n{T}, Pay 1 life: Add one mana of any color. Spend this mana only to cast an instant or sorcery spell.' });
+    const confluence = land('Mana Confluence', ['W', 'U', 'B', 'R', 'G']);
+    const elk = card('Elk', { mana_cost: '{U}', cmc: 1, type_line: 'Creature', colors: ['U'] });
+    const think = card('Think', { mana_cost: '{U}', cmc: 1, type_line: 'Sorcery', colors: ['U'] });
+    const filler = card('Filler', { mana_cost: '{2}', cmc: 2, colors: [] });
+    const odds = (deck: Deck, name: string) => castability(deck).rows.find(r => r.card.name === name)?.odds ?? 1;
+    const halls = deckOf([[elk, 4], [think, 4], [filler, 28], [hall, 24]]);
+    expect(odds(halls, 'Think')).toBe(1);
+    expect(odds(halls, 'Elk')).toBe(0);
+    expect(odds(deckOf([[elk, 4], [filler, 32], [confluence, 24]]), 'Elk')).toBe(1);
+  });
 });
