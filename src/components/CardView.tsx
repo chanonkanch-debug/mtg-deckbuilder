@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import type { Card } from '../lib/scryfall';
+import { useEffect, useState } from 'react';
+import { fetchArts, type Card } from '../lib/scryfall';
 
 export interface PreviewState { src: string; x: number; y: number }
 
@@ -15,7 +15,25 @@ export function CardPreview({ preview }: { preview: PreviewState | null }) {
 }
 
 /** Full card view opened by right-click (or long-press on touch). */
-export function CardModal({ card, format, onClose }: { card: Card; format: string; onClose: () => void }) {
+interface ModalProps {
+  card: Card;
+  format: string;
+  onClose: () => void;
+  /** Set when the card is in the current deck: swaps the deck's copy to another printing. */
+  onUseArt?: (art: Card) => void;
+}
+
+export function CardModal({ card: original, format, onClose, onUseArt }: ModalProps) {
+  const [card, setCard] = useState(original); // the printing being shown
+  const [arts, setArts] = useState<Card[] | null>(null);
+  const [artsState, setArtsState] = useState<'idle' | 'loading' | 'error'>('idle');
+  useEffect(() => { setCard(original); setArts(null); setArtsState('idle'); }, [original]);
+
+  const loadArts = () => {
+    setArtsState('loading');
+    fetchArts(original).then(a => { setArts(a); setArtsState('idle'); }, () => setArtsState('error'));
+  };
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', onKey);
@@ -41,6 +59,29 @@ export function CardModal({ card, format, onClose }: { card: Card; format: strin
           </p>
           <p className="small">Legal in {format}: <b>{legality}</b></p>
           {card.uri && <a href={card.uri} target="_blank" rel="noopener">Open on Scryfall</a>}
+
+          <div className="arts">
+            {!arts && (
+              <button type="button" onClick={loadArts} disabled={artsState === 'loading'}>
+                {artsState === 'loading' ? 'Loading arts…' : artsState === 'error' ? "Couldn't load arts, try again" : 'Show alternate arts'}
+              </button>
+            )}
+            {arts && (
+              <>
+                <div className="small muted">{arts.length} art version{arts.length === 1 ? '' : 's'}. Click one to view it.</div>
+                <div className="art-grid">
+                  {arts.map(a => (
+                    <button type="button" key={a.id} className={a.id === card.id ? 'current' : ''} title={`${a.set_name} (${(a.set || '').toUpperCase()})`} onClick={() => setCard(a)}>
+                      {a.img_small ? <img src={a.img_small} alt={a.set_name} loading="lazy" /> : <span>{(a.set || '').toUpperCase()}</span>}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+            {onUseArt && card.id !== original.id && (
+              <button type="button" className="primary" onClick={() => { onUseArt(card); onClose(); }}>Use this art in my deck</button>
+            )}
+          </div>
         </div>
       </div>
     </div>

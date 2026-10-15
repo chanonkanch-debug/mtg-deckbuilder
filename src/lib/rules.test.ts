@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Card } from './scryfall';
+import { searchUrl, type Card } from './scryfall';
 import { checkDeck, copyLimit, deckStats, type Deck, type DeckEntry } from './rules';
 import { exportList, parseList } from './decklist';
 import { buildQuery, filterQuery } from './filters';
@@ -111,5 +111,16 @@ describe('archetype queries', () => {
     const d = deckOf('modern', []);
     expect(buildQuery(d, { text: 't:elf or t:goblin', filters: new Set(['mv:1']), sets: new Set(), onlyLegal: true, onlyIdentity: false }))
       .toBe('(t:elf or t:goblin) mv=1 f:modern');
+  });
+});
+
+describe('searchUrl', () => {
+  it('shows the regular art by default and every art on request', () => {
+    const def = new URL('https://x' + searchUrl({ q: 't:dragon', order: 'name', dir: 'asc' }));
+    expect(def.searchParams.get('q')).toBe('t:dragon prefer:default');
+    expect(def.searchParams.get('unique')).toBe('cards');
+    const all = new URL('https://x' + searchUrl({ q: 't:dragon', order: 'name', dir: 'asc', allArts: true }));
+    expect(all.searchParams.get('q')).toBe('t:dragon');
+    expect(all.searchParams.get('unique')).toBe('art');
   });
 });

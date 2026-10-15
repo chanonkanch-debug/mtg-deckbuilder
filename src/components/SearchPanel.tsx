@@ -21,6 +21,9 @@ const SORTS: [string, string][] = [
   ['released', 'release date'], ['rarity', 'rarity'], ['power', 'power'], ['toughness', 'toughness'],
 ];
 
+type PanelKey = 'filters' | 'archetypes' | 'sets' | 'guide';
+const TOOLBAR: [PanelKey, string][] = [['filters', 'Filters'], ['archetypes', 'Archetypes'], ['sets', 'Sets'], ['guide', 'Syntax help']];
+
 interface Props {
   deck: Deck;
   prefs: Prefs;
@@ -39,6 +42,8 @@ export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, o
   const [sets, setSets] = useState<Set<string>>(new Set());
   const [onlyLegal, setOnlyLegal] = useState(true);
   const [onlyIdentity, setOnlyIdentity] = useState(true);
+  const [allArts, setAllArts] = useState(false);
+  const [openPanel, setOpenPanel] = useState<PanelKey | null>(null);
 
   const [results, setResults] = useState<Card[]>([]);
   const [nextPage, setNextPage] = useState<string | null>(null);
@@ -54,7 +59,8 @@ export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, o
   const hasQuery = !!submitted.trim() || filters.size > 0 || sets.size > 0;
   const query = useMemo(() => hasQuery ? buildQuery(deck, { text: submitted, filters, sets, onlyLegal, onlyIdentity }) : '',
     [hasQuery, deck, submitted, filters, sets, onlyLegal, onlyIdentity]);
-  const url = query ? searchUrl({ q: query, order: prefs.order, dir: prefs.dir }) : null;
+  const url = query ? searchUrl({ q: query, order: prefs.order, dir: prefs.dir, allArts }) : null;
+  const countIn = (groups: typeof FILTERS) => groups.reduce((n, g) => n + g.options.filter((_, i) => filters.has(`${g.key}:${i}`)).length, 0);
 
   useEffect(() => {
     const mySeq = ++seq.current;
@@ -152,13 +158,37 @@ export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, o
         <button className="primary" type="submit">Search</button>
       </form>
 
-      <SyntaxGuide onTry={q => { setText(q); setSubmitted(q); }} />
-      <FilterChips title="Filters" groups={FILTERS} active={filters} onToggle={toggleFilter} onClear={clearGroups} />
-      <FilterChips
-        title="Archetypes" groups={ARCHETYPES} active={filters} onToggle={toggleFilter} onClear={clearGroups}
-        note="Pick a strategy or theme, optionally with a tribe. Hover a button to see the search it runs. These match rules text, so expect some loose results."
-      />
-      <SetPicker selected={sets} onToggle={toggleSet} onClear={() => setSets(new Set())} />
+      {/* One toolbar; at most one panel open at a time keeps the search area compact. */}
+      <div className="toolbar" role="tablist">
+        {TOOLBAR.map(([key, label]) => {
+          const n = key === 'filters' ? countIn(FILTERS) : key === 'archetypes' ? countIn(ARCHETYPES) : key === 'sets' ? sets.size : 0;
+          return (
+            <button type="button" key={key} role="tab" aria-selected={openPanel === key} className={openPanel === key ? 'open' : ''}
+              onClick={() => setOpenPanel(p => (p === key ? null : key))}>
+              {label}{n > 0 && <span className="count"> {n}</span>} <span className="caret">{openPanel === key ? '▴' : '▾'}</span>
+            </button>
+          );
+        })}
+      </div>
+      {openPanel === 'guide' && <SyntaxGuide onTry={q => { setText(q); setSubmitted(q); }} />}
+      {openPanel === 'filters' && <FilterChips title="Filters" groups={FILTERS} active={filters} onToggle={toggleFilter} onClear={clearGroups} />}
+      {openPanel === 'archetypes' && (
+        <FilterChips
+          title="Archetypes" groups={ARCHETYPES} active={filters} onToggle={toggleFilter} onClear={clearGroups}
+          note="Pick a strategy or theme, optionally with a tribe. Hover a button to see the search it runs. These match rules text, so expect some loose results."
+        />
+      )}
+      {openPanel === 'sets' && <SetPicker selected={sets} onToggle={toggleSet} onClear={() => setSets(new Set())} />}
+
+      {(filters.size > 0 || sets.size > 0) && (
+        <div className="pills">
+          {[...FILTERS, ...ARCHETYPES].flatMap(g => g.options.map(([label], i) => [`${g.key}:${i}`, g.key === 'mv' ? `Mana value ${label}` : label] as const))
+            .filter(([id]) => filters.has(id))
+            .map(([id, label]) => <button type="button" key={id} className="pill" title="Remove" onClick={() => toggleFilter(id)}>{label} ✕</button>)}
+          {[...sets].map(code => <button type="button" key={code} className="pill" title="Remove" onClick={() => toggleSet(code)}>Set: {code.toUpperCase()} ✕</button>)}
+          <button type="button" className="pill clear" onClick={() => { delay.current = FILTER_DELAY_MS; setFilters(new Set()); setSets(new Set()); }}>Clear all</button>
+        </div>
+      )}
 
       <div className="row small" style={{ marginTop: 6 }}>
         <label><input type="checkbox" checked={onlyLegal} onChange={e => setOnlyLegal(e.target.checked)} /> Only cards legal in this format</label>
@@ -171,7 +201,9 @@ export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, o
         <button type="button" title="Toggle sort direction" onClick={() => setPrefs({ dir: prefs.dir === 'asc' ? 'desc' : 'asc' })}>
           {prefs.dir === 'asc' ? '↑ Ascending' : '↓ Descending'}
         </button>
-        <a className="muted" href="https://scryfall.com/docs/syntax" target="_blank" rel="noopener">Search syntax help</a>
+        <label title="Off: each card once, with its regular art. On: every printing with a different artwork.">
+          <input type="checkbox" checked={allArts} onChange={e => setAllArts(e.target.checked)} /> Show alternate arts
+        </label>
       </div>
 
       <div className="row" style={{ marginTop: 8, justifyContent: 'space-between' }}>

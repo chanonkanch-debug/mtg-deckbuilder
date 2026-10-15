@@ -1,20 +1,18 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { fetchSets, type SetInfo } from '../lib/scryfall';
 import { MAIN_SET_TYPES } from '../lib/filters';
 
 interface Props { selected: Set<string>; onToggle: (code: string) => void; onClear: () => void }
 
-/** Set filter. The set list loads from Scryfall the first time the dropdown opens. */
+/** Set filter with a searchable list of tick boxes. */
 export default function SetPicker({ selected, onToggle, onClear }: Props) {
   const [sets, setSets] = useState<SetInfo[] | null>(null);
   const [error, setError] = useState('');
   const [term, setTerm] = useState('');
   const [mainOnly, setMainOnly] = useState(true);
 
-  const load = () => {
-    if (sets) return;
-    fetchSets().then(setSets, err => setError(err.message));
-  };
+  // fetchSets is cached, so reopening the panel doesn't call Scryfall again.
+  useEffect(() => { fetchSets().then(setSets, err => setError(err.message)); }, []);
 
   const t = term.trim().toLowerCase();
   const shown = (sets || [])
@@ -26,8 +24,7 @@ export default function SetPicker({ selected, onToggle, onClear }: Props) {
     .slice(0, 300);
 
   return (
-    <details className="filters" onToggle={e => { if ((e.target as HTMLDetailsElement).open) load(); }}>
-      <summary>Sets {selected.size > 0 && <span className="count">({selected.size})</span>}</summary>
+    <div className="filters">
       <div className="row" style={{ marginBottom: 6 }}>
         <input type="search" placeholder="Find a set by name or code" style={{ flex: '1 1 200px', minWidth: 0 }} value={term} onChange={e => setTerm(e.target.value)} />
         <select title="Set type" value={mainOnly ? 'main' : 'all'} onChange={e => setMainOnly(e.target.value === 'main')}>
@@ -49,6 +46,6 @@ export default function SetPicker({ selected, onToggle, onClear }: Props) {
             </label>
           ))}
       </div>
-    </details>
+    </div>
   );
 }

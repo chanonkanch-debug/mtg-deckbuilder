@@ -23,8 +23,7 @@ const ROWS: [syntax: string, meaning: string, example: string][] = [
 
 export default function SyntaxGuide({ onTry }: { onTry: (query: string) => void }) {
   return (
-    <details className="filters">
-      <summary>Search syntax guide</summary>
+    <div className="filters">
       <p className="small muted" style={{ margin: '0 0 8px' }}>
         Combine any of these in the search box. Terms are joined with AND unless you write <code>or</code>. Click an example to try it.
       </p>
@@ -42,6 +41,6 @@ export default function SyntaxGuide({ onTry }: { onTry: (query: string) => void 
       <p className="small" style={{ margin: '8px 0 0' }}>
         <a href="https://scryfall.com/docs/syntax" target="_blank" rel="noopener">Full Scryfall syntax reference</a>
       </p>
-    </details>
+    </div>
   );
 }

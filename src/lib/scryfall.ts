@@ -9,6 +9,7 @@ export type Legality = 'legal' | 'not_legal' | 'banned' | 'restricted';
 
 export interface Card {
   id: string;
+  oracle_id?: string;
   name: string;
   mana_cost: string;
   cmc: number;
@@ -153,6 +154,7 @@ export function slimCard(c: any): Card {
   const back = !c.image_uris && faces[1]?.image_uris;
   return {
     id: c.id,
+    oracle_id: c.oracle_id || c.card_faces?.[0]?.oracle_id,
     name: c.name,
     mana_cost: c.mana_cost ?? faces.map(f => f.mana_cost).filter(Boolean).join(' // '),
     cmc: c.cmc || 0,
@@ -183,10 +185,24 @@ export const slimPage = (res: any): SearchPage => ({
 });
 
 // ---------- Endpoints ----------
-export interface SearchParams { q: string; order: string; dir: 'asc' | 'desc' }
+export interface SearchParams { q: string; order: string; dir: 'asc' | 'desc'; allArts?: boolean }
 
-export function searchUrl({ q, order, dir }: SearchParams) {
-  return `/cards/search?${new URLSearchParams({ q, order, dir, unique: 'cards' })}`;
+/**
+ * By default each card appears once, shown with its regular-frame printing (prefer:default), so
+ * showcase, borderless and other alternate arts don't replace the familiar art. allArts lists every
+ * distinct artwork instead.
+ */
+export function searchUrl({ q, order, dir, allArts = false }: SearchParams) {
+  const query = allArts ? q : `${q} prefer:default`;
+  return `/cards/search?${new URLSearchParams({ q: query, order, dir, unique: allArts ? 'art' : 'cards' })}`;
+}
+
+/** Every distinct artwork of a card, oldest first. */
+export async function fetchArts(card: Card): Promise<Card[]> {
+  const q = card.oracle_id ? `oracleid:${card.oracle_id}` : `!"${card.name}"`;
+  const url = `/cards/search?${new URLSearchParams({ q, unique: 'art', order: 'released', dir: 'asc' })}`;
+  const { page } = await searchCards(url);
+  return page.data;
 }
 
 /** Fetches one Scryfall result page. A search with no matches (HTTP 404) returns an empty page. */
