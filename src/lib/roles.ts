@@ -46,6 +46,8 @@ export const ROLES: RoleDef[] = [
       || /deals? (\d+|x|damage equal to [^.]*) damage to (any target|target (creature|planeswalker|permanent|attacking|blocking))/.test(t)
       || /deals? damage equal to [^.]* to (any target|target creature)/.test(t)
       || /target creature (an opponent controls )?gets -(\d+|x)\/-(\d+|x)/.test(t)
+      // "Target creature has base power and toughness 0/0" (Multiply by Zero and similar).
+      || /target creature[^.]* 0\/0/.test(t)
       || /return target (nonland permanent|creature|permanent)[^.]* to (its|their) owner'?s?'? hand/.test(t)
       || /fights? (target|another target|up to one target)/.test(t)
       || /(target|each) opponent sacrifices an? (creature|nonland permanent|permanent)/.test(t),

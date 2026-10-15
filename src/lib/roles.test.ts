@@ -19,6 +19,8 @@ describe('roles', () => {
     ['Whenever an opponent casts a spell, you may draw a card unless that player pays {1}.', 'Enchantment', ['draw']],
     ['Lightning Bolt deals 3 damage to any target.', 'Instant', ['removal']],
     ['Exile target creature. Its controller gains life equal to its power.', 'Instant', ['removal']],
+    ['Target creature gets -4/-4 until end of turn.', 'Instant', ['removal']],
+    ['Until end of turn, target creature has base power and toughness 0/0.', 'Instant', ['removal']],
     ['Exile target card from a graveyard.', 'Instant', []],
     ['Destroy all creatures. They can\'t be regenerated.', 'Sorcery', ['wipe']],
     ['As an additional cost to cast this spell, pay X life.\nAll creatures get -X/-X until end of turn.', 'Sorcery', ['wipe']],
