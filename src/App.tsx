@@ -7,6 +7,7 @@ import DeckBar from './components/DeckBar';
 import SearchPanel, { type SearchRequest } from './components/SearchPanel';
 import DeckPanel from './components/DeckPanel';
 import { CardModal, CardPreview, type PreviewState } from './components/CardView';
+import type { Trial } from './lib/swap';
 
 export default function App() {
   const [store, setStore] = useState<Store>(loadStore);
@@ -14,6 +15,7 @@ export default function App() {
   const [preview, setPreview] = useState<PreviewState | null>(null);
   const [modalCard, setModalCard] = useState<Card | null>(null);
   const [toastMsg, setToastMsg] = useState('');
+  const [trial, setTrial] = useState<Trial | null>(null);
   const [searchRequest, setSearchRequest] = useState<SearchRequest & { n: number }>();
   const toastTimer = useRef<number>(undefined);
 
@@ -68,6 +70,10 @@ export default function App() {
   }, []);
   const hidePreview = useCallback(() => setPreview(null), []);
   const openCard = useCallback((card: Card) => { setPreview(null); setModalCard(card); }, []);
+  const tryAdd = useCallback((card: Card) => setTrial(t => ({ ...t, add: card })), []);
+  const tryCut = useCallback((card: Card) => setTrial(t => ({ ...t, cut: card })), []);
+  // A swap being tried belongs to the deck it was started on.
+  useEffect(() => setTrial(null), [store.current]);
 
   return (
     <>
@@ -99,6 +105,7 @@ export default function App() {
           onPreview={showPreview}
           onHidePreview={hidePreview}
           onOpen={openCard}
+          onTry={tryAdd}
           request={searchRequest}
         />
         <DeckPanel
@@ -112,6 +119,8 @@ export default function App() {
           onHidePreview={hidePreview}
           onOpen={openCard}
           toast={toast}
+          trial={trial}
+          setTrial={setTrial}
           onSearch={req => setSearchRequest(r => ({ ...req, n: (r?.n ?? 0) + 1 }))}
         />
       </main>
@@ -124,6 +133,8 @@ export default function App() {
       {modalCard && (
         <CardModal
           card={modalCard} format={deck.format} onClose={() => setModalCard(null)}
+          onTry={deck.cards[modalCard.id]?.main ? undefined : tryAdd}
+          onTryCut={deck.cards[modalCard.id]?.main ? tryCut : undefined}
           onUseArt={deck.cards[modalCard.id] ? art => { swapArt(modalCard.id, art); toast(`Now using the ${art.set_name || 'selected'} art.`); } : undefined}
         />
       )}
