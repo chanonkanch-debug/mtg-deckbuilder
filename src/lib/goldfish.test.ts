@@ -52,3 +52,20 @@ describe('goldfish', () => {
     expect(r.stuck[0].card.name).toBe('Off-color');
   });
 });
+
+describe('goldfish runs', () => {
+  it('repeats with the same seed and changes with a new one', () => {
+    const d = deckOf([[card('Bolt'), 36], [land('Mountain', ['R']), 24]]);
+    expect(goldfish(d, 300, 0)).toEqual(goldfish(d, 300, 0));
+    expect(goldfish(d, 300, 1)!.sample).not.toEqual(goldfish(d, 300, 0)!.sample);
+  });
+  it('casts the front face of split and adventure cards and plays MDFC lands as lands', () => {
+    const giant = card('Bonecrusher Giant // Stomp', { mana_cost: '{2}{R} // {1}{R}', cmc: 3, type_line: 'Creature — Giant // Instant — Adventure' });
+    const mdfc = card('Sea Gate Restoration // Sea Gate, Reborn', { mana_cost: '{4}{U}{U}{U}', cmc: 7, type_line: 'Sorcery // Land', colors: ['U'], produced_mana: ['U'],
+      oracle_text: "As Sea Gate, Reborn enters, you may pay 3 life. If you don't, it enters tapped." });
+    const r = goldfish(deckOf([[giant, 36], [mdfc, 4], [land('Mountain', ['R']), 20]]), 300)!;
+    expect(r.turns[3].lands).toBeGreaterThan(3.3);
+    expect(r.stuck.map(x => x.card.name)).not.toContain(mdfc.name);
+    expect(r.turns[2].spent).toBeGreaterThan(2.5); // Bonecrusher needs one red, not two
+  });
+});

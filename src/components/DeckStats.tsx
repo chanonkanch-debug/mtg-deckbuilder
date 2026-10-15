@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import ManaText from './ManaText';
 import type { Deck } from '../lib/rules';
 import { COLOR_NAMES, COLORS, curveByColor, manaBase, typeCounts } from '../lib/analysis';
@@ -228,16 +228,36 @@ function Roles({ deck, onPreview, onHidePreview, onOpen, onFindMore }: Props) {
   );
 }
 
-const GAMES = 2000;
+const GAMES = 4000;
 
 function Goldfish({ deck }: { deck: Deck }) {
-  const result = useMemo(() => goldfish(deck, GAMES), [deck]);
+  const [run, setRun] = useState(1);
+  const [result, setResult] = useState<GoldfishResult | null | undefined>(undefined);
+  const [busy, setBusy] = useState(true);
   const [sample, setSample] = useState<GoldfishResult['sample'] | null>(null);
+
+  // A changed deck starts over at run 1 with a fresh sample game.
+  useEffect(() => { setRun(1); setSample(null); }, [deck]);
+  // Wait for a pause in edits (clicking + several times) before simulating, so the panel stays responsive.
+  useEffect(() => {
+    setBusy(true);
+    const timer = setTimeout(() => { setResult(goldfish(deck, GAMES, run - 1)); setBusy(false); }, 250);
+    return () => clearTimeout(timer);
+  }, [deck, run]);
+
+  if (result === undefined) return <p className="small muted">Simulating {GAMES.toLocaleString()} games…</p>;
   if (!result) return <p className="small muted">Add at least {7 + TURNS} cards to the main deck to simulate games.</p>;
   const { turns, stuck, commander } = result;
   const shown = sample ?? result.sample;
   return (
-    <>
+    <div className={busy ? 'stale' : ''}>
+      <div className="row small goldfish-bar">
+        <span className="muted">{busy ? 'Simulating…' : `Run ${run} · ${GAMES.toLocaleString()} games`}</span>
+        <button type="button" disabled={busy} onClick={() => { setRun(r => r + 1); setSample(null); }}
+          title="Play a new set of random games. Differences of a couple of percent between runs are just chance.">Run again</button>
+        <button type="button" disabled={busy || run === 1} onClick={() => { setRun(1); setSample(null); }}
+          title="Go back to run 1, which always gives the same numbers for this deck">Reset</button>
+      </div>
       <div className="tiles">
         <div className="tile"><b>{pct(result.mulligan)}</b><span>mulligan</span></div>
         <div className="tile"><b>{pct(result.screw)}</b><span>mana screw<br /><small>2 or fewer lands on turn 4</small></span></div>
@@ -298,6 +318,6 @@ function Goldfish({ deck }: { deck: Deck }) {
         lands and mulligans otherwise. Mana rocks, mana creatures, land-search ramp and draw spells are modeled; other card
         effects are not.
       </p>
-    </>
+    </div>
   );
 }
