@@ -48,6 +48,20 @@ export default function App() {
     });
   }, [updateDeck]);
 
+  // Swap a deck card for another printing of it (a different art), keeping its counts.
+  const swapArt = useCallback((oldId: string, art: Card) => {
+    updateDeck(d => {
+      const old = d.cards[oldId];
+      if (!old) return d;
+      const { [oldId]: _old, ...cards } = d.cards;
+      const existing = cards[art.id];
+      cards[art.id] = existing
+        ? { card: art, main: existing.main + old.main, side: existing.side + old.side, cmdr: existing.cmdr + old.cmdr }
+        : { ...old, card: art };
+      return { ...d, cards };
+    });
+  }, [updateDeck]);
+
   const showPreview = useCallback((e: React.MouseEvent, src: string | null) => {
     setPreview(src ? { src, x: e.clientX, y: e.clientY } : null);
   }, []);
@@ -102,7 +116,12 @@ export default function App() {
         <button type="button" className="small" onClick={() => { clearCache(); toast('Cache cleared.'); }}>Clear cache</button>
       </footer>
       <CardPreview preview={preview} />
-      {modalCard && <CardModal card={modalCard} format={deck.format} onClose={() => setModalCard(null)} />}
+      {modalCard && (
+        <CardModal
+          card={modalCard} format={deck.format} onClose={() => setModalCard(null)}
+          onUseArt={deck.cards[modalCard.id] ? art => { swapArt(modalCard.id, art); toast(`Now using the ${art.set_name || 'selected'} art.`); } : undefined}
+        />
+      )}
       <div id="toast" style={{ display: toastMsg ? 'block' : 'none' }}>{toastMsg}</div>
     </>
   );
