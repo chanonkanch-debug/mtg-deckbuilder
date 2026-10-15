@@ -25,6 +25,8 @@ const SORTS: [string, string][] = [
 type PanelKey = 'filters' | 'archetypes' | 'sets' | 'guide';
 const TOOLBAR: [PanelKey, string][] = [['filters', 'Filters'], ['archetypes', 'Archetypes'], ['sets', 'Sets'], ['guide', 'Syntax help']];
 
+export interface SearchRequest { archetype?: string; query?: string }
+
 interface Props {
   deck: Deck;
   prefs: Prefs;
@@ -33,8 +35,8 @@ interface Props {
   onPreview: (e: React.MouseEvent, src: string | null) => void;
   onHidePreview: () => void;
   onOpen: (card: Card) => void;
-  /** A request from elsewhere (the Roles tab) to search one Archetypes quick filter; n changes on every request. */
-  request?: { archetype: string; n: number };
+  /** A search started elsewhere (the deck checkup): one Archetypes quick filter or a query. n changes on every request. */
+  request?: SearchRequest & { n: number };
 }
 
 export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, onHidePreview, onOpen, request }: Props) {
@@ -94,9 +96,9 @@ export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, o
   useEffect(() => {
     if (!request) return;
     const group = ARCHETYPES.find(g => g.options.some(o => o[0] === request.archetype));
-    if (!group) return;
-    setText(''); setSubmitted(''); setSets(new Set()); setOpenPanel(null);
-    setFilters(new Set([`${group.key}:${group.options.findIndex(o => o[0] === request.archetype)}`]));
+    if (!group && !request.query) return;
+    setText(request.query ?? ''); setSubmitted(request.query ?? ''); setSets(new Set()); setOpenPanel(null);
+    setFilters(group ? new Set([`${group.key}:${group.options.findIndex(o => o[0] === request.archetype)}`]) : new Set());
     panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [request]);
 

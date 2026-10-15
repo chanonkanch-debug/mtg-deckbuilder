@@ -7,7 +7,7 @@ import { roleCounts } from '../lib/roles';
 import { goldfish, sampleGame, TURNS, type Goldfish as GoldfishResult } from '../lib/goldfish';
 import type { Card } from '../lib/scryfall';
 
-type Tab = 'curve' | 'types' | 'mana' | 'cast' | 'roles' | 'goldfish';
+export type Tab = 'curve' | 'types' | 'mana' | 'cast' | 'roles' | 'goldfish';
 const TABS: [Tab, string][] = [['curve', 'Curve'], ['types', 'Types'], ['mana', 'Mana base'], ['cast', 'Castability'], ['roles', 'Roles'], ['goldfish', 'Goldfish']];
 // Stack order bottom to top. Colors come from the --mana-* tokens in styles.css.
 const STACK = [...COLORS, 'M', 'C'];
@@ -21,8 +21,8 @@ interface Props {
   onFindMore: (archetype: string) => void;
 }
 
-export default function DeckStats({ deck, onPreview, onHidePreview, onOpen, onFindMore }: Props) {
-  const [tab, setTab] = useState<Tab>('curve');
+export default function DeckStats({ deck, onPreview, onHidePreview, onOpen, onFindMore, tab, setTab }: Props & { tab: Tab; setTab: (t: Tab) => void }) {
+  if (!TABS.some(([k]) => k === tab)) tab = 'curve';
   return (
     <div className="deck-stats">
       <div className="tabs" role="tablist">

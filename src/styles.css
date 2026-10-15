@@ -187,3 +187,15 @@
   .game-log { margin: 0; padding-left: 0; list-style: none; display: grid; gap: 3px; }
   .goldfish-bar { margin-bottom: 8px; }
   .stale .tiles, .stale .goldfish-table, .stale .stuck { opacity: .5; transition: opacity .15s; }
+  .checkup { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 10px; }
+  .checkup-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+  .checkup-head h3 { margin: 0; font-size: 15px; color: var(--text); }
+  .findings { list-style: none; margin: 0 0 6px; padding: 0; display: grid; gap: 6px; }
+  .finding { display: grid; grid-template-columns: 22px 1fr auto; gap: 8px; align-items: center; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; border-left-width: 4px; }
+  .finding.bad { border-left-color: var(--bad); } .finding.warn { border-left-color: var(--warn); } .finding.ok { border-left-color: var(--ok); grid-template-columns: 22px 1fr; }
+  .finding-icon { font-weight: 700; text-align: center; }
+  .finding.bad .finding-icon { color: var(--bad); } .finding.warn .finding-icon { color: var(--warn); } .finding.ok .finding-icon { color: var(--ok); }
+  .finding-text { min-width: 0; }
+  .finding button { white-space: nowrap; }
+  .details-toggle { margin: 8px 0 6px; }
+  @media (max-width: 520px) { .finding { grid-template-columns: 22px 1fr; } .finding button { grid-column: 2; justify-self: start; } }

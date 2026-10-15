@@ -205,8 +205,18 @@ function playGame(library: SimCard[], commanders: SimCard[], random: () => numbe
   return { mulligans, turns, stuck, drawn, cmdrTurn, log, hand: opening, seenLands6 };
 }
 
+const cache = new WeakMap<Deck, Map<string, Goldfish | null>>();
+
 /** Simulates `games` games. The same deck and seed always give the same numbers; a new seed plays different games. */
 export function goldfish(deck: Deck, games = 2000, seed = 0): Goldfish | null {
+  const key = `${games}:${seed}`;
+  const byDeck = cache.get(deck) ?? new Map<string, Goldfish | null>();
+  cache.set(deck, byDeck);
+  if (!byDeck.has(key)) byDeck.set(key, simulate(deck, games, seed));
+  return byDeck.get(key)!;
+}
+
+function simulate(deck: Deck, games: number, seed: number): Goldfish | null {
   const fetch = fetchTargets(deck);
   const fetchColors = fetch.basic.length ? fetch.basic : ALL;
   const entries = entriesOf(deck);
