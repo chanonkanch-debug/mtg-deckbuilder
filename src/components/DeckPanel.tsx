@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import ManaText from './ManaText';
 import { fetchCollection, type Card } from '../lib/scryfall';
 import { checkDeck, deckStats, FORMAT_RULES, type Board, type Deck, type DeckEntry } from '../lib/rules';
 import { groupDeck, type Group } from '../lib/analysis';
 import { exportList, parseList } from '../lib/decklist';
 import type { Prefs } from '../lib/storage';
-import Checkup from './Checkup';
+import Checkup, { useDeckSim } from './Checkup';
+import { cardWarnings, type CardWarning } from '../lib/doctor';
 import type { SearchRequest } from './SearchPanel';
 import SampleHand from './SampleHand';
 
@@ -27,8 +28,10 @@ export default function DeckPanel({ deck, prefs, setPrefs, onAdd, onMove, onRepl
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [showChecks, setShowChecks] = useState(false);
   const groups = groupDeck(deck, prefs.groupBy);
+  const { sim, busy } = useDeckSim(deck);
+  const warnings = useMemo(() => cardWarnings(deck, busy ? null : sim), [deck, sim, busy]);
   const toggleGroup = (key: string) => setCollapsed(c => { const n = new Set(c); n.has(key) ? n.delete(key) : n.add(key); return n; });
-  const rowProps = { format: deck.format, onAdd, onMove, onPreview, onOpen };
+  const rowProps = { format: deck.format, onAdd, onMove, onPreview, onOpen, warnings };
 
   return (
     <section className="panel" id="deckPanel">
@@ -77,7 +80,7 @@ export default function DeckPanel({ deck, prefs, setPrefs, onAdd, onMove, onRepl
         ))}
       </div>
 
-      <Checkup deck={deck} prefs={prefs} setPrefs={setPrefs} onPreview={onPreview} onHidePreview={onHidePreview} onOpen={onOpen} onSearch={onSearch} />
+      <Checkup deck={deck} prefs={prefs} setPrefs={setPrefs} onPreview={onPreview} onHidePreview={onHidePreview} onOpen={onOpen} onSearch={onSearch} sim={sim} busy={busy} />
       <SampleHand deck={deck} onPreview={onPreview} onHidePreview={onHidePreview} onOpen={onOpen} />
       <ImportExport deck={deck} onReplaceCards={onReplaceCards} toast={toast} />
     </section>
@@ -112,6 +115,13 @@ function SummaryBar({ deck, showChecks, onToggleChecks }: { deck: Deck; showChec
 interface RowProps {
   format: string;
   onAdd: Props['onAdd']; onMove: Props['onMove']; onPreview: Props['onPreview']; onOpen: Props['onOpen'];
+  warnings: Map<string, CardWarning[]>;
+}
+
+/** Checkup warnings on a card (hard to cast, often stuck); the reason shows on hover. */
+function warningFlags(card: Card, board: Board, warnings: Map<string, CardWarning[]>) {
+  if (board === 'side') return null;
+  return (warnings.get(card.id) ?? []).map(w => <span key={w.label} className="flag warn" title={w.detail}>{w.label}</span>);
 }
 
 function legalityFlag(card: Card, format: string) {
@@ -142,12 +152,13 @@ const openOnRightClick = (card: Card, onOpen: (c: Card) => void) => (ev: React.M
   onOpen(card);
 };
 
-function DeckRow({ entry: e, board, format, onAdd, onMove, onPreview, onOpen }: RowProps & { entry: DeckEntry; board: Board }) {
+function DeckRow({ entry: e, board, format, onAdd, onMove, onPreview, onOpen, warnings }: RowProps & { entry: DeckEntry; board: Board }) {
   return (
     <li onContextMenu={openOnRightClick(e.card, onOpen)}>
       <span className="qty">{e[board]}</span>
       <span className="name" onMouseMove={ev => onPreview(ev, e.card.img_large || e.card.img || null)}>{e.card.name}</span>
       {legalityFlag(e.card, format)}
+      {warningFlags(e.card, board, warnings)}
       <ManaText className="cost" text={e.card.mana_cost} />
       <RowButtons entry={e} board={board} onAdd={onAdd} onMove={onMove} />
     </li>
@@ -155,7 +166,7 @@ function DeckRow({ entry: e, board, format, onAdd, onMove, onPreview, onOpen }: 
 }
 
 /** Card images stacked so each card's title bar shows; hovering a card lifts it and shows its controls. */
-function VisualGroup({ group, format, onAdd, onMove, onPreview, onOpen }: RowProps & { group: Group }) {
+function VisualGroup({ group, format, onAdd, onMove, onPreview, onOpen, warnings }: RowProps & { group: Group }) {
   return (
     <div className="stack">
       {group.entries.map(e => (
@@ -164,7 +175,9 @@ function VisualGroup({ group, format, onAdd, onMove, onPreview, onOpen }: RowPro
             ? <img src={e.card.img} alt={e.card.name} loading="lazy" onMouseMove={ev => onPreview(ev, e.card.img_large || e.card.img)} />
             : <div className="noimg"><b>{e.card.name}</b><br /><ManaText text={e.card.mana_cost} /></div>}
           <span className="stack-qty">{e[group.board]}×</span>
-          {legalityFlag(e.card, format) && <span className="stack-flag">{legalityFlag(e.card, format)}</span>}
+          {(legalityFlag(e.card, format) || (group.board !== 'side' && warnings.has(e.card.id))) && (
+            <span className="stack-flag">{legalityFlag(e.card, format)}{warningFlags(e.card, group.board, warnings)}</span>
+          )}
           <span className="stack-btns"><RowButtons entry={e} board={group.board} onAdd={onAdd} onMove={onMove} /></span>
         </div>
       ))}

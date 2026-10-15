@@ -113,3 +113,38 @@ export function readiness(deck: Deck): { ready: boolean; have: number; need: num
   const have = countBoard(deck, 'main') + countBoard(deck, 'cmdr');
   return { ready: have >= need * 0.75, have, need };
 }
+
+export interface CardWarning { label: string; detail: string }
+
+/** Short warnings to show on cards in the deck list, keyed by card id. */
+export function cardWarnings(deck: Deck, sim: Goldfish | null): Map<string, CardWarning[]> {
+  const out = new Map<string, CardWarning[]>();
+  const add = (id: string, w: CardWarning) => out.set(id, [...(out.get(id) ?? []), w]);
+  castability(deck).rows.filter(r => r.odds < TARGET).forEach(r => add(r.card.id, {
+    label: 'hard to cast', detail: `Castable on turn ${r.turn} in ${pct(r.odds)} of games; aim for ${pct(TARGET)}.`,
+  }));
+  sim?.stuck.filter(s => s.rate >= 0.3).forEach(s => add(s.card.id, {
+    label: 'often stuck', detail: `Still in hand on turn 8 with spare mana in ${pct(s.rate)} of games where you draw it.`,
+  }));
+  return out;
+}
+
+export interface Snapshot { deckId: string; findings: Finding[]; sim: Goldfish | null }
+export interface Change { text: string; good: boolean }
+
+/** What got better or worse between two checkups of the same deck. Rate changes under 2 points are noise and skipped. */
+export function compare(before: Snapshot, after: Snapshot): Change[] {
+  const out: Change[] = [];
+  if (before.sim && after.sim) {
+    const rates: [keyof Goldfish, string][] = [['screw', 'Stall on lands'], ['flood', 'Flood'], ['mulligan', 'Mulligan']];
+    rates.forEach(([k, label]) => {
+      const a = before.sim![k] as number, b = after.sim![k] as number;
+      if (Math.abs(b - a) >= 0.02) out.push({ text: `${label} ${pct(a)} → ${pct(b)}`, good: b < a });
+    });
+  }
+  const ids = (s: Snapshot) => new Set(s.findings.map(f => f.id));
+  const was = ids(before), now = ids(after);
+  before.findings.filter(f => !now.has(f.id)).forEach(f => out.push({ text: `Fixed: ${f.title}`, good: true }));
+  after.findings.filter(f => !was.has(f.id)).forEach(f => out.push({ text: `New: ${f.title}`, good: false }));
+  return out;
+}

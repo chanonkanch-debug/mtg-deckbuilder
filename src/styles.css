@@ -199,3 +199,6 @@
   .finding button { white-space: nowrap; }
   .details-toggle { margin: 8px 0 6px; }
   @media (max-width: 520px) { .finding { grid-template-columns: 22px 1fr; } .finding button { grid-column: 2; justify-self: start; } }
+  .changes { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 0 0 8px; }
+  .changes .good { color: var(--ok); } .changes .worse { color: var(--bad); }
+  .stack-flag { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
