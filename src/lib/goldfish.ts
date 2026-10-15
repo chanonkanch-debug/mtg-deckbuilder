@@ -5,7 +5,7 @@ import type { Deck } from './rules';
 import { entriesOf, playsAsLand } from './rules';
 import { colorsFor, fetchTargets, landColors, spendLimit, type FetchTargets } from './analysis';
 import { colorRequirements } from './castability';
-import { rolesOf } from './roles';
+import { manaMade, rolesOf } from './roles';
 
 export const TURNS = 8;
 const HAND = 7;
@@ -36,20 +36,8 @@ function prepare(card: Card, fetch: FetchTargets): SimCard {
   const land = playsAsLand(card);
   const spell = /\b(Instant|Sorcery)\b/.test(card.type_line);
   const roles = land ? [] : rolesOf(card);
-  let makes: Mana[] = [], rampLands = 0, draws = 0;
-  if (roles.includes('ramp') && !spell) {
-    const add = text.match(/add ((\{[^}]+\})+|one mana|two mana|three mana)/);
-    if (add) {
-      const syms = add[1].match(/\{[^}]+\}/g);
-      const any = /any color|any type|commander's color identity/.test(text);
-      const produced = (card.produced_mana ?? []).filter(c => ALL.includes(c) || c === 'C');
-      const colors = any ? ALL : produced.length ? produced : ['C'];
-      const n = syms ? syms.length : WORDS[add[1].split(' ')[0]] ?? 1;
-      // "{T}: Add {R} or {G}" lists two symbols but makes one mana.
-      const one = syms && / or \{/.test(text.slice(add.index!, add.index! + 40));
-      makes = Array.from({ length: one ? 1 : n }, (_, i) => (syms && !one && !any ? [syms[i].slice(1, -1)] : colors));
-    }
-  }
+  const makes: Mana[] = manaMade(card);
+  let rampLands = 0, draws = 0;
   if (roles.includes('ramp') && /search your library for [^.]*lands?/.test(text)) {
     rampLands = /put (them|those cards|both) onto the battlefield/.test(text) ? 2 : 1;
   }

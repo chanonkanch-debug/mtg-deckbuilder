@@ -58,4 +58,22 @@ describe('castability', () => {
     expect(odds(halls, 'Elk')).toBe(0);
     expect(odds(deckOf([[elk, 4], [filler, 32], [confluence, 24]]), 'Elk')).toBe(1);
   });
+
+  it('counts mana rocks and dorks as sources for spells cast a turn later', () => {
+    const signet = card('Azorius Signet', { mana_cost: '{2}', cmc: 2, type_line: 'Artifact', colors: [], produced_mana: ['W', 'U'],
+      oracle_text: '{1}, {T}: Add {W}{U}.' });
+    const birds = card('Birds of Paradise', { mana_cost: '{G}', cmc: 1, type_line: 'Creature — Bird', colors: ['G'], produced_mana: ['W', 'U', 'B', 'R', 'G'],
+      oracle_text: 'Flying\n{T}: Add one mana of any color.' });
+    const wrath = card('Wrath', { mana_cost: '{2}{W}{W}', cmc: 4, type_line: 'Sorcery', colors: ['W'] });
+    const filler = card('Filler', { mana_cost: '{2}', cmc: 2, colors: [] });
+    const base: [Card, number][] = [[wrath, 4], [land('Plains', ['W']), 8], [land('Forest', ['G']), 16]];
+    const odds = (d: Deck) => castability(d).rows.find(r => r.card.name === 'Wrath')!.odds;
+    const without = castability(deckOf([...base, [filler, 32]]));
+    const withRocks = castability(deckOf([...base, [signet, 8], [birds, 8], [filler, 16]]));
+    expect(withRocks.rocks).toBe(16);
+    expect(without.rocks).toBe(0);
+    expect(odds(deckOf([...base, [signet, 8], [birds, 8], [filler, 16]]))).toBeGreaterThan(odds(deckOf([...base, [filler, 32]])) + 0.1);
+    // Birds itself costs {G}, cast on turn 1, so no rock helps it.
+    expect(withRocks.rows.find(r => r.card.name === 'Birds of Paradise')!.odds).toBeLessThan(1);
+  });
 });
