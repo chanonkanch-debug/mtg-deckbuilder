@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Card } from './scryfall';
 import type { Deck, DeckEntry } from './rules';
-import { checkup } from './doctor';
+import { cardWarnings, checkup, compare } from './doctor';
 import { goldfish } from './goldfish';
 
 function card(name: string, over: Partial<Card> = {}): Card {
@@ -40,5 +40,22 @@ describe('checkup', () => {
     const d = deckOf([[card('Bear', { mana_cost: '{1}{G}', cmc: 2, type_line: 'Creature', colors: ['G'] }), 63], [land('Forest', ['G']), 36]], 'commander');
     const ids = checkup(d, null).map(x => x.id);
     expect(ids).toEqual(expect.arrayContaining(['role:ramp', 'role:draw', 'role:removal', 'role:wipe']));
+  });
+});
+
+describe('checkup extras', () => {
+  const blue = card('Counterspell', { mana_cost: '{U}{U}', cmc: 2, colors: ['U'] });
+  const splash = deckOf([[card('Bolt'), 32], [blue, 4], [land('Mountain', ['R']), 20], [land('Island', ['U']), 4]]);
+  it('marks hard-to-cast cards', () => {
+    expect(cardWarnings(splash, goldfish(splash, 500)).get('Counterspell')![0].label).toBe('hard to cast');
+    expect(cardWarnings(splash, null).has('Bolt')).toBe(false);
+  });
+  it('reports fixed problems and rate changes after an edit', () => {
+    const fixed = deckOf([[card('Bolt'), 32], [blue, 4], [land('Mountain', ['R']), 4], [land('Volcanic Island', ['U', 'R']), 20]]);
+    const before = { deckId: 'd', findings: checkup(splash, goldfish(splash, 500)), sim: goldfish(splash, 500) };
+    const after = { deckId: 'd', findings: checkup(fixed, goldfish(fixed, 500)), sim: goldfish(fixed, 500) };
+    const changes = compare(before, after);
+    expect(changes).toContainEqual({ text: 'Fixed: Counterspell is hard to cast on time', good: true });
+    expect(compare(before, before)).toEqual([]);
   });
 });
