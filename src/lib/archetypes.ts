@@ -11,7 +11,7 @@ export const ARCHETYPES: FilterGroup[] = [
     options: [
       ['Aggro', 't:creature mv<=2 pow>=2', 'Cheap creatures that hit hard early'],
       ['Burn', '(t:instant or t:sorcery) o:/deals? \\d+ damage to (any target|each opponent|target player)/', 'Direct damage spells that can go face'],
-      ['Removal', '(t:instant or t:sorcery) (o:"destroy target" or o:"exile target" or o:/deals? \\d+ damage to target creature/)', 'Spot removal for control and midrange'],
+      ['Removal', '(t:instant or t:sorcery) (o:"destroy target" or o:"exile target" or o:/deals? \\d+ damage to target creature/ or o:/target creature[^.]* gets -(\\d+|x|X)\\/-(\\d+|x|X)/ or o:/target creature[^.]* 0\\/0/)', 'Spot removal: destroy, exile, damage, -X/-X and 0/0 effects'],
       ['Counterspells', 'o:"counter target"', 'Spells that counter other spells or abilities'],
       ['Board wipes', 'o:/(destroy|exile) all (other )?(creatures|nonland permanents)/ or o:/all creatures get -\\d+\\/-\\d+/', 'Mass removal for control decks'],
       ['Card draw', 'o:/draws? (two|three|four|x) cards/ or o:"draw a card for each"', 'Card advantage engines'],
