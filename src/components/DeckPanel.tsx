@@ -10,6 +10,8 @@ import DeckStats, { BASIC_TABS, type Tab } from './DeckStats';
 import DetailsWindow from './DetailsWindow';
 import { cardWarnings, type CardWarning } from '../lib/doctor';
 import type { SearchRequest } from './SearchPanel';
+import SwapPreview from './SwapPreview';
+import type { Trial } from '../lib/swap';
 
 interface Props {
   deck: Deck;
@@ -23,9 +25,11 @@ interface Props {
   onOpen: (card: Card) => void;
   toast: (msg: string) => void;
   onSearch: (req: SearchRequest) => void;
+  trial: Trial | null;
+  setTrial: (t: Trial | null) => void;
 }
 
-export default function DeckPanel({ deck, prefs, setPrefs, onAdd, onMove, onReplaceCards, onPreview, onHidePreview, onOpen, toast, onSearch }: Props) {
+export default function DeckPanel({ deck, prefs, setPrefs, onAdd, onMove, onReplaceCards, onPreview, onHidePreview, onOpen, toast, onSearch, trial, setTrial }: Props) {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [showChecks, setShowChecks] = useState(false);
   const [basicTab, setBasicTab] = useState<Tab>('curve');
@@ -52,6 +56,16 @@ export default function DeckPanel({ deck, prefs, setPrefs, onAdd, onMove, onRepl
         <span><b>Deck details</b><span className="small"> Castability, roles, simulation and sample hands</span></span>
         <span className="details-arrow" aria-hidden>›</span>
       </button>
+
+      {trial && (
+        <SwapPreview deck={deck} trial={trial} setTrial={setTrial} sim={busy ? null : sim}
+          onCommit={t => {
+            if (t.add) onAdd(t.add, 'main', 1);
+            if (t.cut) onAdd(t.cut, 'main', -1);
+            setTrial(null);
+            toast(t.add && t.cut ? `Added ${t.add.name} and cut ${t.cut.name}.` : t.add ? `Added ${t.add.name}.` : `Cut ${t.cut!.name}.`);
+          }} />
+      )}
 
       <div className="deck-toolbar row small">
         <span className="seg" role="group" aria-label="View">

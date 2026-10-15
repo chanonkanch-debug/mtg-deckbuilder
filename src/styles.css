@@ -224,3 +224,19 @@
   .details-icon { font-size: 20px; }
   .details-arrow { margin-left: auto; font-size: 22px; color: var(--accent); }
   @media (max-width: 520px) { #deckList:not(.visual) .doc-flag { font-size: 0; padding: 0 5px; } #deckList:not(.visual) .doc-flag::before { content: "!"; font-size: 11px; font-weight: 700; } }
+  /* Swap preview: before/after for one card in, one card out. */
+  .swap { margin: 10px 0; padding: 10px 12px; border: 1px solid var(--accent); border-radius: 10px; background: color-mix(in srgb, var(--accent) 5%, var(--panel)); }
+  .swap-head { display: flex; align-items: center; justify-content: space-between; }
+  .swap-head h3 { margin: 0; color: var(--accent); font-size: 14px; }
+  .swap-picks { display: grid; gap: 6px; margin: 8px 0; }
+  .swap-pick { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+  .swap-pick select { max-width: 100%; min-width: 0; flex: 1; }
+  .swap-sign { width: 20px; height: 20px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; flex: none; }
+  .swap-sign.add { background: var(--ok); } .swap-sign.cut { background: var(--bad); }
+  .swap-verdict { margin: 6px 0; } .swap-verdict.better { color: var(--ok); } .swap-verdict.worse, .swap-verdict .worse { color: var(--bad); }
+  .swap-table { border-collapse: collapse; width: 100%; font-size: 13px; margin-bottom: 8px; }
+  .swap-table th { text-align: left; font-weight: 500; color: var(--muted); font-size: 12px; }
+  .swap-table td, .swap-table th { padding: 3px 6px; border-bottom: 1px solid var(--border); }
+  .swap-table td:not(:first-child), .swap-table th:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; width: 22%; }
+  .swap-table tr.better td:last-child { color: var(--ok); font-weight: 600; }
+  .swap-table tr.worse td:last-child { color: var(--bad); font-weight: 600; }

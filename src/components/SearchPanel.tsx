@@ -34,11 +34,13 @@ interface Props {
   onPreview: (e: React.MouseEvent, src: string | null) => void;
   onHidePreview: () => void;
   onOpen: (card: Card) => void;
+  /** Previews adding this card to the deck. */
+  onTry: (card: Card) => void;
   /** A search started elsewhere (the deck checkup): one Archetypes quick filter or a query. n changes on every request. */
   request?: SearchRequest & { n: number };
 }
 
-export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, onHidePreview, onOpen, request }: Props) {
+export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, onHidePreview, onOpen, onTry, request }: Props) {
   const [text, setText] = useState('');
   const [submitted, setSubmitted] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -256,6 +258,7 @@ export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, o
             <div className="btns">
               <button onClick={() => onAdd(c, 'main')}>+Main</button>
               <button onClick={() => onAdd(c, 'side')}>+Side</button>
+              <button title="See what this card would change before adding it" onClick={() => onTry(c)}>Try</button>
               {deck.format === 'commander' && canBeCommander(c) && <button onClick={() => onAdd(c, 'cmdr')}>Cmdr</button>}
             </div>
           </div>
