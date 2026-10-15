@@ -33,9 +33,11 @@ interface Props {
   onPreview: (e: React.MouseEvent, src: string | null) => void;
   onHidePreview: () => void;
   onOpen: (card: Card) => void;
+  /** A request from elsewhere (the Roles tab) to search one Archetypes quick filter; n changes on every request. */
+  request?: { archetype: string; n: number };
 }
 
-export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, onHidePreview, onOpen }: Props) {
+export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, onHidePreview, onOpen, request }: Props) {
   const [text, setText] = useState('');
   const [submitted, setSubmitted] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -55,6 +57,7 @@ export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, o
 
   const delay = useRef(0);
   const seq = useRef(0);
+  const panelRef = useRef<HTMLElement>(null);
 
   // The search is empty until the user types something or picks a filter or set.
   const hasQuery = !!submitted.trim() || filters.size > 0 || sets.size > 0;
@@ -87,6 +90,15 @@ export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, o
     delay.current = 0;
     return () => clearTimeout(timer);
   }, [url]);
+
+  useEffect(() => {
+    if (!request) return;
+    const group = ARCHETYPES.find(g => g.options.some(o => o[0] === request.archetype));
+    if (!group) return;
+    setText(''); setSubmitted(''); setSets(new Set()); setOpenPanel(null);
+    setFilters(new Set([`${group.key}:${group.options.findIndex(o => o[0] === request.archetype)}`]));
+    panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [request]);
 
   // Autocomplete suggestions for plain card names.
   useEffect(() => {
@@ -147,7 +159,7 @@ export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, o
   const zoom = Math.min(ZOOM_LEVELS.length - 1, Math.max(0, prefs.zoom));
 
   return (
-    <section className="panel">
+    <section className="panel" ref={panelRef}>
       <h2>Card search</h2>
       <form className="row" onSubmit={e => { e.preventDefault(); setSubmitted(text); }}>
         <input

@@ -19,9 +19,10 @@ interface Props {
   onHidePreview: () => void;
   onOpen: (card: Card) => void;
   toast: (msg: string) => void;
+  onFindMore: (archetype: string) => void;
 }
 
-export default function DeckPanel({ deck, prefs, setPrefs, onAdd, onMove, onReplaceCards, onPreview, onHidePreview, onOpen, toast }: Props) {
+export default function DeckPanel({ deck, prefs, setPrefs, onAdd, onMove, onReplaceCards, onPreview, onHidePreview, onOpen, toast, onFindMore }: Props) {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [showChecks, setShowChecks] = useState(false);
   const groups = groupDeck(deck, prefs.groupBy);
@@ -75,7 +76,7 @@ export default function DeckPanel({ deck, prefs, setPrefs, onAdd, onMove, onRepl
         ))}
       </div>
 
-      <DeckStats deck={deck} onPreview={onPreview} onHidePreview={onHidePreview} onOpen={onOpen} />
+      <DeckStats deck={deck} onPreview={onPreview} onHidePreview={onHidePreview} onOpen={onOpen} onFindMore={onFindMore} />
       <SampleHand deck={deck} onPreview={onPreview} onHidePreview={onHidePreview} onOpen={onOpen} />
       <ImportExport deck={deck} onReplaceCards={onReplaceCards} toast={toast} />
     </section>

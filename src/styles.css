@@ -165,3 +165,13 @@
   .hand-card .noimg { background: var(--chip); border: 1px solid var(--border); padding: 4px; font-size: 10px; }
   img.mana { width: 1.05em; height: 1.05em; vertical-align: -0.15em; margin: 0 1px; }
   .cost img.mana { width: 15px; height: 15px; }
+  .roles { display: grid; gap: 4px; }
+  .role-row { display: grid; grid-template-columns: 120px 1fr 52px 80px; align-items: center; gap: 8px; font-size: 13px; }
+  .role-label { text-align: left; }
+  button.linkish { background: none; border: 0; padding: 2px 0; color: inherit; font: inherit; cursor: pointer; }
+  .role-track { position: relative; height: 10px; }
+  .role-target { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--text); opacity: .6; }
+  .role-n { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  .role-n.ok { color: var(--ok); } .role-n.warn { color: var(--warn); } .role-n.bad { color: var(--bad); }
+  .role-cards { padding: 4px 0 8px 18px; display: flex; flex-wrap: wrap; gap: 4px 10px; }
+  .role-card { cursor: default; }

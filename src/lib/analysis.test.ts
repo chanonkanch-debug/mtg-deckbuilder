@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Card } from './scryfall';
 import type { Deck, DeckEntry } from './rules';
-import { colorKey, curveByColor, groupDeck, hypergeometric, manaBase, shuffle, typeCounts } from './analysis';
+import { colorKey, curveByColor, fetchTargets, groupDeck, hypergeometric, landColors, manaBase, shuffle, typeCounts } from './analysis';
 
 function card(name: string, over: Partial<Card> = {}): Card {
   return {
@@ -54,5 +54,20 @@ describe('analysis', () => {
   it('shuffles without losing cards', () => {
     const items = [1, 2, 3, 4, 5];
     expect(shuffle(items).sort()).toEqual(items);
+  });
+});
+
+describe('fetch lands', () => {
+  const fetchland = card('Wooded Foothills', { mana_cost: '', cmc: 0, colors: [], color_identity: [], type_line: 'Land',
+    oracle_text: '{T}, Pay 1 life, Sacrifice Wooded Foothills: Search your library for a Mountain or Forest card, put it onto the battlefield, then shuffle.' });
+  const wilds = card('Evolving Wilds', { mana_cost: '', cmc: 0, colors: [], color_identity: [], type_line: 'Land',
+    oracle_text: '{T}, Sacrifice Evolving Wilds: Search your library for a basic land card, put it onto the battlefield tapped, then shuffle.' });
+  const island = card('Island', { mana_cost: '', cmc: 0, colors: [], type_line: 'Basic Land — Island', produced_mana: ['U'] });
+  it('count as the colors they can find in this deck', () => {
+    const d = deckOf([[fetchland, { main: 4 }], [wilds, { main: 2 }], [mountain, { main: 8 }], [island, { main: 4 }], [bolt, { main: 4 }]]);
+    const f = fetchTargets(d);
+    expect(landColors(fetchland, f)).toEqual(['R']);
+    expect(landColors(wilds, f).sort()).toEqual(['R', 'U']);
+    expect(manaBase(d).rows.find(r => r.color === 'R')!.sources).toBe(14);
   });
 });

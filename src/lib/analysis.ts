@@ -67,9 +67,28 @@ export function typeCounts(deck: Deck): [string, number][] {
 
 export interface ManaBaseRow { color: Color; pips: number; share: number; sources: number; suggested: number }
 
-/** Lands that can make a color. Uses Scryfall's produced_mana, or the land's color identity for older saved cards. */
-function landColors(card: Card): string[] {
-  return card.produced_mana ?? card.color_identity;
+const BASIC_TYPES: [string, Color][] = [['Plains', 'W'], ['Island', 'U'], ['Swamp', 'B'], ['Mountain', 'R'], ['Forest', 'G']];
+
+/** What fetch lands in this deck can find: colors of its basic lands, and colors of every basic land type among its lands. */
+export interface FetchTargets { basic: string[]; typed: string[] }
+export function fetchTargets(deck: Deck): FetchTargets {
+  const lands = entriesOf(deck).filter(e => e.main && isLand(e.card)).map(e => e.card);
+  const colorsOfTypes = (cards: Card[]) => BASIC_TYPES.filter(([t]) => cards.some(c => new RegExp(`—.*\\b${t}\\b`).test(c.type_line))).map(([, c]) => c);
+  return { basic: colorsOfTypes(lands.filter(c => /\bBasic\b/.test(c.type_line))), typed: colorsOfTypes(lands) };
+}
+
+/**
+ * Colors a land can make. Uses Scryfall's produced_mana, or the land's color identity for older saved cards.
+ * Fetch lands make no mana themselves, so they count as the colors they can find in this deck: the land
+ * types they name, or every basic land for "search for a basic land card".
+ */
+export function landColors(card: Card, fetch: FetchTargets = { basic: [], typed: [] }): string[] {
+  const made = card.produced_mana ?? card.color_identity;
+  if (made.some(c => c !== 'C')) return made;
+  const search = card.oracle_text.match(/search your library for ([^.]*?)cards?/i)?.[1];
+  if (!search || !/land|plains|island|swamp|mountain|forest/i.test(search)) return made;
+  const named = BASIC_TYPES.filter(([t]) => search.includes(t)).map(([, c]) => c);
+  return named.length ? named.filter(c => fetch.typed.includes(c)) : fetch.basic;
 }
 
 /**
@@ -86,9 +105,10 @@ export function manaBase(deck: Deck): { rows: ManaBaseRow[]; lands: number } {
     });
   });
   const totalPips = COLORS.reduce((n, c) => n + (pips[c] || 0), 0);
+  const fetch = fetchTargets(deck);
   const rows = COLORS.filter(c => pips[c]).map(c => {
     const share = pips[c] / totalPips;
-    const sources = main.filter(e => isLand(e.card) && landColors(e.card).includes(c)).reduce((n, e) => n + e.main, 0);
+    const sources = main.filter(e => isLand(e.card) && landColors(e.card, fetch).includes(c)).reduce((n, e) => n + e.main, 0);
     return { color: c, pips: pips[c], share, sources, suggested: Math.round(share * lands) };
   });
   return { rows, lands };

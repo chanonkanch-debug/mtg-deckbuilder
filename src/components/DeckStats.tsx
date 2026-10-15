@@ -3,10 +3,11 @@ import ManaText from './ManaText';
 import type { Deck } from '../lib/rules';
 import { COLOR_NAMES, COLORS, curveByColor, manaBase, typeCounts } from '../lib/analysis';
 import { castability, TARGET } from '../lib/castability';
+import { roleCounts } from '../lib/roles';
 import type { Card } from '../lib/scryfall';
 
-type Tab = 'curve' | 'types' | 'mana' | 'cast';
-const TABS: [Tab, string][] = [['curve', 'Curve'], ['types', 'Types'], ['mana', 'Mana base'], ['cast', 'Castability']];
+type Tab = 'curve' | 'types' | 'mana' | 'cast' | 'roles';
+const TABS: [Tab, string][] = [['curve', 'Curve'], ['types', 'Types'], ['mana', 'Mana base'], ['cast', 'Castability'], ['roles', 'Roles']];
 // Stack order bottom to top. Colors come from the --mana-* tokens in styles.css.
 const STACK = [...COLORS, 'M', 'C'];
 
@@ -15,9 +16,11 @@ interface Props {
   onPreview: (e: React.MouseEvent, src: string | null) => void;
   onHidePreview: () => void;
   onOpen: (card: Card) => void;
+  /** Opens the search with the Archetypes quick filter of this label. */
+  onFindMore: (archetype: string) => void;
 }
 
-export default function DeckStats({ deck, onPreview, onHidePreview, onOpen }: Props) {
+export default function DeckStats({ deck, onPreview, onHidePreview, onOpen, onFindMore }: Props) {
   const [tab, setTab] = useState<Tab>('curve');
   return (
     <div className="deck-stats">
@@ -29,6 +32,7 @@ export default function DeckStats({ deck, onPreview, onHidePreview, onOpen }: Pr
       {tab === 'curve' && <Curve deck={deck} />}
       {tab === 'types' && <Types deck={deck} />}
       {tab === 'mana' && <ManaBase deck={deck} />}
+      {tab === 'roles' && <Roles deck={deck} onPreview={onPreview} onHidePreview={onHidePreview} onOpen={onOpen} onFindMore={onFindMore} />}
       {tab === 'cast' && <Castability deck={deck} onPreview={onPreview} onHidePreview={onHidePreview} onOpen={onOpen} />}
     </div>
   );
@@ -114,7 +118,7 @@ function ManaBase({ deck }: { deck: Deck }) {
 const pct = (p: number) => `${Math.round(p * 100)}%`;
 const level = (p: number) => (p >= TARGET ? 'ok' : p >= 0.8 ? 'warn' : 'bad');
 
-function Castability({ deck, onPreview, onHidePreview, onOpen }: Props) {
+function Castability({ deck, onPreview, onHidePreview, onOpen }: Omit<Props, 'onFindMore'>) {
   const { rows, landDrops, lands, deckSize } = useMemo(() => castability(deck), [deck]);
   if (deckSize < 7) return <p className="small muted">Add at least 7 cards to the main deck to check castability.</p>;
   if (!rows.length) return <p className="small muted">Add colored spells to see how reliably you can cast them.</p>;
@@ -155,8 +159,68 @@ function Castability({ deck, onPreview, onHidePreview, onOpen }: Props) {
       </table>
       <p className="small muted">
         The chance you have the right colors to cast each spell on the turn equal to its mana value, on the play, assuming you hit
-        every land drop. {pct(TARGET)} is Frank Karsten's guideline for a reliable mana base. Only lands count as sources;
-        mana rocks, dorks and fetch lands are not counted toward colors.
+        every land drop. {pct(TARGET)} is Frank Karsten's guideline for a reliable mana base. Only lands count as sources (fetch lands
+        count as the colors they can find); mana rocks and dorks are not counted.
+      </p>
+    </>
+  );
+}
+
+function Roles({ deck, onPreview, onHidePreview, onOpen, onFindMore }: Props) {
+  const { rows, lands, landTarget } = useMemo(() => roleCounts(deck), [deck]);
+  const [open, setOpen] = useState<string | null>(null);
+  const hasTargets = landTarget !== undefined;
+  const status = (count: number, target?: number) => target === undefined ? '' : count >= target ? 'ok' : count >= target * 0.7 ? 'warn' : 'bad';
+  const max = Math.max(1, ...rows.map(r => Math.max(r.count, r.target ?? 0)));
+  return (
+    <>
+      <div className="roles" onMouseLeave={onHidePreview}>
+        {hasTargets && (
+          <div className="role-row">
+            <span className="role-label">Lands</span>
+            <span />
+            <span className={`role-n ${status(lands, landTarget)}`}>{lands}<span className="muted">/{landTarget}</span></span>
+            <span />
+          </div>
+        )}
+        {rows.map(r => (
+          <div key={r.role.key}>
+            <div className="role-row">
+              <button type="button" className="role-label linkish" aria-expanded={open === r.role.key} title={r.role.hint}
+                onClick={() => setOpen(o => (o === r.role.key ? null : r.role.key))}>
+                {open === r.role.key ? '▾' : '▸'} {r.role.label}
+              </button>
+              <span className="hbar-track role-track">
+                <span className="hbar-fill" style={{ width: `${(r.count / max) * 100}%` }} />
+                {r.target !== undefined && <span className="role-target" style={{ left: `${(r.target / max) * 100}%` }} title={`Target ${r.target}`} />}
+              </span>
+              <span className={`role-n ${status(r.count, r.target)}`}>{r.count}{r.target !== undefined && <span className="muted">/{r.target}</span>}</span>
+              {r.role.archetype
+                ? <button type="button" className="small" title={`Search for ${r.role.label.toLowerCase()} that fit this deck`} onClick={() => onFindMore(r.role.archetype!)}>Find more</button>
+                : <span />}
+            </div>
+            {open === r.role.key && (
+              <div className="role-cards small">
+                <p className="muted" style={{ margin: '0 0 4px' }}>{r.role.hint}</p>
+                {r.cards.length
+                  ? r.cards.map(({ card, n }) => (
+                    <span key={card.id} className="role-card" onMouseMove={e => onPreview(e, card.img_large || card.img || null)}
+                      onContextMenu={e => { e.preventDefault(); onOpen(card); }}>
+                      {n > 1 && `${n}× `}{card.name}
+                    </span>
+                  ))
+                  : <span className="muted">None yet.</span>}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+      <p className="small muted">
+        Cards are tagged from their rules text, so unusual wordings can be missed; a card can fill more than one role.
+        {hasTargets
+          ? ' Targets follow the Command Zone deck template (37 lands, 10 ramp, 10 draw, 10 removal, 3 board wipes); the line on each bar marks the target.'
+          : ' Good numbers depend on the archetype, so there are no targets for 60-card formats.'}
+        {' '}Find more searches cards of that role that are legal in this deck.
       </p>
     </>
   );
