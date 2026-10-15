@@ -115,7 +115,8 @@
   .badge.bad { background: var(--bad); border-color: var(--bad); }
   #issues { margin-top: 8px; }
   .deck-toolbar { margin: 10px 0 4px; }
-  .deck-toolbar .zoom { margin-left: auto; }
+  .deck-toolbar .zoom { margin-left: auto; user-select: none; }
+  .zoom-label { min-width: 3em; text-align: center; font-variant-numeric: tabular-nums; }
   .seg { display: inline-flex; }
   .seg button { border-radius: 0; font-size: 12px; padding: 3px 10px; }
   .seg button:first-child { border-radius: 6px 0 0 6px; }

@@ -26,18 +26,21 @@ export function saveStore(store: Store) {
 
 /** Card widths in px for each zoom step; the search grid and the deck area each have their own zoom step. 140 is 100%. */
 export const ZOOM_LEVELS = [90, 110, 140, 170, 200, 240, 300];
-/** Deck list text size for each zoom step. */
-const LIST_FONT = [12, 13, 14, 15, 16, 18, 20];
-/** CSS variables that size the deck area for a zoom step. */
-export function deckZoomStyle(zoom: number): Record<string, string> {
-  const z = Math.min(ZOOM_LEVELS.length - 1, Math.max(0, zoom));
-  return { '--deck-card-w': `${Math.round(ZOOM_LEVELS[z] * 132 / 140)}px`, '--deck-font': `${LIST_FONT[z]}px` };
+/** Deck area zoom steps, as a scale of the normal size. Even steps both ways from 100%. */
+export const DECK_SCALES = [0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.25, 1.4, 1.6, 1.8, 2];
+/** The saved deck scale, snapped to the nearest step. */
+export function deckScaleIndex(scale: number): number {
+  return DECK_SCALES.reduce((best, s, i) => (Math.abs(s - scale) < Math.abs(DECK_SCALES[best] - scale) ? i : best), 0);
+}
+/** CSS variables that size the deck area: card width in Visual view, text size in List view. */
+export function deckZoomStyle(scale: number): Record<string, string> {
+  return { '--deck-card-w': `${Math.round(132 * scale)}px`, '--deck-font': `${Math.round(14 * scale)}px` };
 }
 
 export type DeckView = 'list' | 'visual';
 export type GroupBy = 'type' | 'mv' | 'color';
-export interface Prefs { dir: 'asc' | 'desc'; zoom: number; deckZoom: number; hoverZoom: boolean; order: string; deckView: DeckView; groupBy: GroupBy; detailsTab: string }
-const DEFAULT_PREFS: Prefs = { dir: 'asc', zoom: 2, deckZoom: 2, hoverZoom: true, order: 'name', deckView: 'list', groupBy: 'type', detailsTab: 'curve' };
+export interface Prefs { dir: 'asc' | 'desc'; zoom: number; deckScale: number; hoverZoom: boolean; order: string; deckView: DeckView; groupBy: GroupBy; detailsTab: string }
+const DEFAULT_PREFS: Prefs = { dir: 'asc', zoom: 2, deckScale: 1, hoverZoom: true, order: 'name', deckView: 'list', groupBy: 'type', detailsTab: 'curve' };
 
 /** Display preferences (sort, zoom, hover) remembered between visits. */
 export function usePrefs() {
