@@ -40,7 +40,7 @@ export default function Checkup({ deck, prefs, setPrefs, onPreview, onHidePrevie
   const [showAll, setShowAll] = useState(false);
   const [changes, setChanges] = useState<Change[]>([]);
   const last = useRef<Snapshot | null>(null);
-  const detailsRef = useRef<HTMLDivElement>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   const cards = Object.keys(deck.cards).length;
   const { ready, have, need } = readiness(deck);
@@ -56,8 +56,8 @@ export default function Checkup({ deck, prefs, setPrefs, onPreview, onHidePrevie
   const shown = showAll ? findings : findings.slice(0, SHOWN);
 
   const openDetails = (tab: string) => {
-    setPrefs({ details: true, detailsTab: tab });
-    setTimeout(() => detailsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
+    setPrefs({ detailsTab: tab });
+    setDetailsOpen(true);
   };
   const act = (a: Action) => {
     if (a.kind === 'search') onSearch({ query: a.query, archetype: a.archetype });
@@ -116,15 +116,40 @@ export default function Checkup({ deck, prefs, setPrefs, onPreview, onHidePrevie
         </button>
       )}
 
-      <div ref={detailsRef} className="details-toggle">
-        <button type="button" className="linkish small" aria-expanded={prefs.details} onClick={() => setPrefs({ details: !prefs.details })}>
-          {prefs.details ? '▾ Hide details' : '▸ Show details'} <span className="muted">(curve, mana base, castability, roles, simulation)</span>
-        </button>
+      <div className="details-toggle">
+        <button type="button" className="small" onClick={() => setDetailsOpen(true)}>Deck details</button>
+        <span className="small muted"> Curve, mana base, castability, roles, simulation and sample hands</span>
       </div>
-      {prefs.details && (
-        <DeckStats deck={deck} tab={prefs.detailsTab as Tab} setTab={t => setPrefs({ detailsTab: t })}
-          onPreview={onPreview} onHidePreview={onHidePreview} onOpen={onOpen} onFindMore={archetype => onSearch({ archetype })} />
+      {detailsOpen && (
+        <DetailsWindow deck={deck} tab={prefs.detailsTab as Tab} setTab={t => setPrefs({ detailsTab: t })} onClose={() => setDetailsOpen(false)}
+          onPreview={onPreview} onHidePreview={onHidePreview} onOpen={onOpen}
+          onFindMore={archetype => { setDetailsOpen(false); onSearch({ archetype }); }} />
       )}
     </section>
+  );
+}
+
+/** The detailed analysis tabs in a fixed-size window over the page, so nothing below the deck needs scrolling to. */
+function DetailsWindow({ deck, tab, setTab, onClose, onPreview, onHidePreview, onOpen, onFindMore }: {
+  deck: Deck; tab: Tab; setTab: (t: Tab) => void; onClose: () => void; onFindMore: (archetype: string) => void;
+} & Pick<Props, 'onPreview' | 'onHidePreview' | 'onOpen'>) {
+  const closeRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    closeRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !document.getElementById('modal')) onClose(); };
+    document.addEventListener('keydown', onKey);
+    document.body.style.overflow = 'hidden';
+    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = ''; };
+  }, [onClose]);
+  return (
+    <div className="details-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="details-window" role="dialog" aria-modal="true" aria-label="Deck details">
+        <div className="details-head">
+          <b>{deck.name || 'Deck'} details</b>
+          <button type="button" ref={closeRef} className="close" title="Close (Esc)" onClick={onClose}>✕</button>
+        </div>
+        <DeckStats deck={deck} tab={tab} setTab={setTab} onPreview={onPreview} onHidePreview={onHidePreview} onOpen={onOpen} onFindMore={onFindMore} />
+      </div>
+    </div>
   );
 }

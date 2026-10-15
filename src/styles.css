@@ -54,7 +54,7 @@
   .curve .col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
   .curve .lbl { font-size: 12px; color: var(--muted); }
   .curve .n { font-size: 12px; font-variant-numeric: tabular-nums; }
-  #preview { position: fixed; pointer-events: none; width: 300px; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,.35); display: none; z-index: 20; }
+  #preview { position: fixed; pointer-events: none; width: 300px; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,.35); display: none; z-index: 45; }
   textarea { width: 100%; min-height: 160px; font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
   details summary { cursor: pointer; color: var(--muted); margin: 8px 0; }
   #toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 8px 14px; border-radius: 8px; display: none; z-index: 30; max-width: calc(100% - 32px); }
@@ -202,3 +202,11 @@
   .changes { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 0 0 8px; }
   .changes .good { color: var(--ok); } .changes .worse { color: var(--bad); }
   .stack-flag { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+  .details-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 35; display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .details-window { background: var(--panel); border-radius: 14px; width: min(760px, 100%); height: min(680px, 100%); display: flex; flex-direction: column; box-shadow: 0 12px 40px rgba(0,0,0,.35); }
+  .details-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px 0; }
+  .details-window .deck-stats { margin: 0; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .details-window .deck-stats > .tabs { margin: 0; padding: 10px 16px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .details-window .deck-stats > .tab-body { flex: 1; overflow: auto; padding: 12px 16px 16px; }
+  .details-window .sample { margin-top: 0; }
+  @media (max-width: 520px) { .details-overlay { padding: 0; } .details-window { border-radius: 0; height: 100%; } }
