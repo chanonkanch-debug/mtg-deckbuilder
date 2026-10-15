@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Card } from './scryfall';
 import type { Deck, DeckEntry } from './rules';
-import { colorKey, curveByColor, fetchTargets, groupDeck, hypergeometric, landColors, manaBase, shuffle, typeCounts } from './analysis';
+import { colorKey, curveByColor, fetchTargets, groupDeck, hypergeometric, landColorCounts, landColors, manaBase, shuffle, typeCounts } from './analysis';
 
 function card(name: string, over: Partial<Card> = {}): Card {
   return {
@@ -69,5 +69,14 @@ describe('fetch lands', () => {
     expect(landColors(fetchland, f)).toEqual(['R']);
     expect(landColors(wilds, f).sort()).toEqual(['R', 'U']);
     expect(manaBase(d).rows.find(r => r.color === 'R')!.sources).toBe(14);
+  });
+});
+
+describe('landColorCounts', () => {
+  it('counts lands per color they make, duals in both, and colorless lands', () => {
+    const land = (name: string, produced: string[]) => card(name, { mana_cost: '', cmc: 0, colors: [], type_line: 'Land', produced_mana: produced });
+    const d = deckOf([[land('Plains', ['W']), { main: 10 }], [land('Hallowed Fountain', ['W', 'U']), { main: 4 }],
+      [land('Wastes', ['C']), { main: 2 }], [card('Bolt'), { main: 4 }]]);
+    expect(landColorCounts(d)).toEqual({ lands: 16, byColor: [{ color: 'W', count: 14 }, { color: 'U', count: 4 }], colorless: 2 });
   });
 });

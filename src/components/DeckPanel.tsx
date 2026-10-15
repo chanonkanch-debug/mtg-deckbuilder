@@ -2,9 +2,9 @@ import { useMemo, useState } from 'react';
 import ManaText from './ManaText';
 import { fetchCollection, type Card } from '../lib/scryfall';
 import { checkDeck, deckStats, FORMAT_RULES, type Board, type Deck, type DeckEntry } from '../lib/rules';
-import { groupDeck, type Group } from '../lib/analysis';
+import { groupDeck, landColorCounts, type Group } from '../lib/analysis';
 import { exportList, parseList } from '../lib/decklist';
-import type { Prefs } from '../lib/storage';
+import { deckZoomStyle, type Prefs } from '../lib/storage';
 import Checkup, { useDeckSim } from './Checkup';
 import DeckStats, { BASIC_TABS, type Tab } from './DeckStats';
 import DetailsWindow from './DetailsWindow';
@@ -74,7 +74,8 @@ export default function DeckPanel({ deck, prefs, setPrefs, onAdd, onMove, onRepl
         )}
       </div>
 
-      <div id="deckList" className={prefs.deckView === 'visual' ? 'visual' : ''} onMouseLeave={onHidePreview}>
+      <div id="deckList" className={prefs.deckView === 'visual' ? 'visual' : ''} onMouseLeave={onHidePreview}
+        style={deckZoomStyle(prefs.zoom) as React.CSSProperties}>
         {groups.length === 0 && <p className="muted">Your deck is empty. Search for cards and click one to add it.</p>}
         {groups.map(g => (
           <div className="deck-group" key={g.key}>
@@ -82,6 +83,7 @@ export default function DeckPanel({ deck, prefs, setPrefs, onAdd, onMove, onRepl
               <button type="button" className="group-toggle" aria-expanded={!collapsed.has(g.key)} onClick={() => toggleGroup(g.key)}>
                 <span className="caret">{collapsed.has(g.key) ? '▸' : '▾'}</span> {g.title} <span className="muted">({g.count})</span>
               </button>
+              {(g.key === 't:Land' || g.key === 'lands') && prefs.deckView === 'list' && <LandColors deck={deck} />}
             </h3>
             {!collapsed.has(g.key) && (prefs.deckView === 'visual'
               ? <VisualGroup group={g} {...rowProps} />
@@ -103,6 +105,17 @@ export default function DeckPanel({ deck, prefs, setPrefs, onAdd, onMove, onRepl
       )}
       <ImportExport deck={deck} onReplaceCards={onReplaceCards} toast={toast} />
     </section>
+  );
+}
+
+/** Lands per color next to the Lands heading, e.g. "W 14 · U 12". */
+function LandColors({ deck }: { deck: Deck }) {
+  const { byColor, colorless } = useMemo(() => landColorCounts(deck), [deck]);
+  return (
+    <span className="land-colors small" title="Lands that make each color (a dual land counts for both)">
+      {byColor.map(c => <span key={c.color}><ManaText text={`{${c.color}}`} /> {c.count}</span>)}
+      {colorless > 0 && <span><ManaText text="{C}" /> {colorless}</span>}
+    </span>
   );
 }
 

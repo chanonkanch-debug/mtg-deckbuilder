@@ -24,6 +24,16 @@ export function saveStore(store: Store) {
   try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch {}
 }
 
+/** Card widths in px for each zoom step; the search grid and the deck's visual view share them. 140 is 100%. */
+export const ZOOM_LEVELS = [90, 110, 140, 170, 200, 240, 300];
+/** Deck list text size for each zoom step. */
+const LIST_FONT = [12, 13, 14, 15, 16, 18, 20];
+/** CSS variables that size the deck area for a zoom step. */
+export function deckZoomStyle(zoom: number): Record<string, string> {
+  const z = Math.min(ZOOM_LEVELS.length - 1, Math.max(0, zoom));
+  return { '--deck-card-w': `${Math.round(ZOOM_LEVELS[z] * 132 / 140)}px`, '--deck-font': `${LIST_FONT[z]}px` };
+}
+
 export type DeckView = 'list' | 'visual';
 export type GroupBy = 'type' | 'mv' | 'color';
 export interface Prefs { dir: 'asc' | 'desc'; zoom: number; hoverZoom: boolean; order: string; deckView: DeckView; groupBy: GroupBy; detailsTab: string }

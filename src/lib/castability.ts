@@ -5,7 +5,12 @@ import type { Deck } from './rules';
 import { entriesOf, playsAsLand } from './rules';
 import { colorsFor, COLORS, fetchTargets, landColors, spendLimit } from './analysis';
 
+/** Source suggestions aim for Frank Karsten's 90%. */
 export const TARGET = 0.9;
+/** Odds at or above this count as reliable (green). A little under TARGET, since the simulated odds wobble by a point or so. */
+export const RELIABLE = 0.88;
+/** Judged on the rounded percent shown, so a spell displayed as 88% is never marked below 88%. */
+export const reliable = (odds: number) => Math.round(odds * 100) >= Math.round(RELIABLE * 100);
 const HAND = 7;
 const SAMPLES = 10000;
 
