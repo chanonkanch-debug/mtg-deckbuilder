@@ -101,6 +101,8 @@ export default function App() {
         />
         <DeckPanel
           deck={deck}
+          prefs={prefs}
+          setPrefs={setPrefs}
           onAdd={addCard}
           onMove={moveCard}
           onReplaceCards={cards => updateDeck(d => ({ ...d, cards }))}
