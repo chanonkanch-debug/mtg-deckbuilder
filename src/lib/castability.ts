@@ -3,7 +3,7 @@
 import type { Card } from './scryfall';
 import type { Deck } from './rules';
 import { entriesOf, playsAsLand } from './rules';
-import { COLORS, fetchTargets, landColors } from './analysis';
+import { colorsFor, COLORS, fetchTargets, landColors, spendLimit } from './analysis';
 
 export const TARGET = 0.9;
 const HAND = 7;
@@ -98,7 +98,11 @@ export function castability(deck: Deck): Castability {
   const entries = entriesOf(deck);
   const fetch = fetchTargets(deck);
   // The library is the main deck; commanders are cast from the command zone with lands drawn from it.
-  const library: (string[] | null)[] = entries.flatMap(e => Array.from({ length: e.main }, () => (isLand(e.card) ? landColors(e.card, fetch) : null)));
+  type Land = { colors: string[]; limit: ReturnType<typeof spendLimit> };
+  const library: (Land | null)[] = entries.flatMap(e => {
+    const land = isLand(e.card) ? { colors: landColors(e.card, fetch), limit: spendLimit(e.card) } : null;
+    return Array.from({ length: e.main }, () => land);
+  });
   const deckSize = library.length;
   const lands = library.filter(Boolean).length;
   const spells = entries.filter(e => (e.main || e.cmdr) && !isLand(e.card) && e.card.cmc > 0)
@@ -119,16 +123,16 @@ export function castability(deck: Deck): Castability {
         const j = i + Math.floor(random() * (deckSize - i));
         [lib[i], lib[j]] = [lib[j], lib[i]];
       }
-      const landsBy: string[][][] = [];
+      const landsBy: Land[][] = [];
       for (let t = 1; t <= maxTurn; t++) {
-        landsBy[t] = lib.slice(0, Math.min(deckSize, HAND + t - 1)).filter((x): x is string[] => !!x);
+        landsBy[t] = lib.slice(0, Math.min(deckSize, HAND + t - 1)).filter((x): x is Land => !!x);
         if (landsBy[t].length >= t) dropHits[t]++;
       }
       spells.forEach((s, i) => {
         const seen = landsBy[s.turn];
         if (seen.length < s.turn) return;
         tries[i]++;
-        if (canPay(s.reqs, seen)) hits[i]++;
+        if (canPay(s.reqs, seen.map(l => colorsFor(l.colors, l.limit, s.card)))) hits[i]++;
       });
     }
   }
@@ -136,7 +140,7 @@ export function castability(deck: Deck): Castability {
   const rows = spells.map((s, i) => {
     const short = [...new Set(s.reqs.filter(r => r.length === 1).map(r => r[0]))].flatMap(color => {
       const need = s.reqs.filter(r => r.length === 1 && r[0] === color).length;
-      const have = library.filter(l => l?.includes(color)).length;
+      const have = library.filter(l => l && colorsFor(l.colors, l.limit, s.card).includes(color)).length;
       const needed = sourcesNeeded(deckSize, lands, need, s.turn);
       return needed === null || needed > have ? [{ color, have, need: needed }] : [];
     });

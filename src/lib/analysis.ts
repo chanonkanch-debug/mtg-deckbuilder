@@ -92,6 +92,26 @@ export function landColors(card: Card, fetch: FetchTargets = { basic: [], typed:
 }
 
 /**
+ * Some lands make colored mana that can only be spent on certain spells, like Great Hall of the Biblioplex
+ * (instants and sorceries) or Ancient Ziggurat (creatures). Returns which spells that mana can cast,
+ * or null when the land's mana can be spent on anything. Restrictions we don't recognize count as no restriction.
+ */
+export function spendLimit(card: Card): ((spell: Card) => boolean) | null {
+  const on = card.oracle_text.toLowerCase().match(/spend this mana only to cast (?:an? )?([^.]*?)spells?\b/)?.[1];
+  if (!on) return null;
+  if (/instant or sorcery/.test(on)) return s => /\b(Instant|Sorcery)\b/.test(s.type_line);
+  if (/multicolored/.test(on)) return s => s.colors.length > 1;
+  if (/creature/.test(on)) return s => /\bCreature\b/.test(s.type_line); // "of the chosen type" is assumed to fit
+  if (/artifact/.test(on)) return s => /\bArtifact\b/.test(s.type_line);
+  return null;
+}
+
+/** Colors a land can spend on this spell: its restricted colored mana drops out when the spell doesn't qualify. */
+export function colorsFor(colors: string[], limit: ((spell: Card) => boolean) | null, spell: Card): string[] {
+  return !limit || limit(spell) ? colors : colors.filter(c => c === 'C');
+}
+
+/**
  * Compares colored mana symbols in nonland cards with lands that produce each color, and suggests
  * splitting the deck's current land count in proportion to the symbols.
  */
