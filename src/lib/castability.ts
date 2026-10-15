@@ -144,7 +144,8 @@ function compute(deck: Deck): Castability {
 
   // Simulate opening hands plus draws, and for each spell count the games where you hit your land drops
   // and whether those lands (and rocks) could pay its colors.
-  const random = mulberry32(deckSize * 7919 + lands + rocks * 31);
+  // The same seed for every deck, so comparing two versions of a deck (a swap) isn't thrown off by different random draws.
+  const random = mulberry32(0x5eed);
   const hits = spells.map(() => 0), tries = spells.map(() => 0);
   const dropHits = Array(maxTurn + 1).fill(0);
   if (deckSize >= HAND) {
