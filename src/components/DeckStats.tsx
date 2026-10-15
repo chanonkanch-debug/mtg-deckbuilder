@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import ManaText from './ManaText';
 import type { Deck } from '../lib/rules';
 import { COLOR_NAMES, COLORS, curveByColor, manaBase, typeCounts } from '../lib/analysis';
 
@@ -83,7 +84,7 @@ function ManaBase({ deck }: { deck: Deck }) {
         <tbody>
           {rows.map(r => (
             <tr key={r.color}>
-              <td><i className="dot" style={{ background: `var(--mana-${r.color})` }} />{COLOR_NAMES[r.color]}</td>
+              <td><ManaText text={`{${r.color}}`} /> {COLOR_NAMES[r.color]}</td>
               <td>{r.pips}</td>
               <td>{Math.round(r.share * 100)}%</td>
               <td className={r.sources < r.suggested ? 'low' : ''}>{r.sources}</td>

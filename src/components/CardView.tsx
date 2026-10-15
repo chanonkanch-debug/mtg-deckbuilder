@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import ManaText from './ManaText';
 import { fetchArts, type Card } from '../lib/scryfall';
 
 export interface PreviewState { src: string; x: number; y: number }
@@ -48,9 +49,9 @@ export function CardModal({ card: original, format, onClose, onUseArt }: ModalPr
         <div className="modal-imgs">{imgs.map(src => <img key={src} src={src} alt={card.name} />)}</div>
         <div className="modal-text">
           <h2>{card.name}</h2>
-          <div className="muted">{card.mana_cost}</div>
+          <div><ManaText text={card.mana_cost} /></div>
           <div>{card.type_line}</div>
-          <div className="oracle">{card.oracle_text}</div>
+          <div className="oracle"><ManaText text={card.oracle_text} /></div>
           {card.pt && <div><b>{card.pt}</b></div>}
           <p className="small muted">
             {card.set_name || (card.set || '').toUpperCase()}

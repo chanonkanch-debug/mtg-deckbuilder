@@ -159,3 +159,5 @@
   .hand { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; margin-top: 8px; }
   .hand-card img, .hand-card .noimg { width: 100%; display: block; border-radius: 4.75% / 3.5%; aspect-ratio: 488 / 680; }
   .hand-card .noimg { background: var(--chip); border: 1px solid var(--border); padding: 4px; font-size: 10px; }
+  img.mana { width: 1.05em; height: 1.05em; vertical-align: -0.15em; margin: 0 1px; }
+  .cost img.mana { width: 15px; height: 15px; }
