@@ -39,10 +39,19 @@ export function setsQuery(codes: Set<string>): string {
   return orGroup([...codes].map(c => `e:${c}`));
 }
 
-export interface QueryOptions { text: string; filters: Set<string>; sets: Set<string>; onlyLegal: boolean; onlyIdentity: boolean }
+export interface QueryOptions { text: string; filters: Set<string>; sets: Set<string>; onlyLegal: boolean; onlyIdentity: boolean; allArts?: boolean }
+
+/**
+ * Rarity is per printing, so "r:rare" can match only a card's showcase, borderless or Secret Lair printing
+ * (a common Lightning Bolt has rare Secret Lair prints), and prefer:default then has nothing else to pick.
+ * Limiting a rarity search to regular printings keeps the familiar art and the card's usual rarity.
+ */
+export const REGULAR_PRINTS = '-is:promo -border:borderless -frame:showcase -frame:extendedart -is:full -e:sld -e:spg -st:masterpiece';
+const usesRarity = (o: QueryOptions) => [...o.filters].some(id => id.startsWith('rarity:')) || /(^|[\s(-])(r|rarity)[:=<>]/i.test(o.text);
 
 export function buildQuery(deck: Deck, o: QueryOptions): string {
   let q = [wrap(o.text.trim()), filterQuery(o.filters), setsQuery(o.sets)].filter(Boolean).join(' ');
+  if (!o.allArts && usesRarity(o)) q += ` ${REGULAR_PRINTS}`;
   if (o.onlyLegal) q += ` f:${deck.format}`;
   if (deck.format === 'commander' && o.onlyIdentity && entriesOf(deck).some(e => e.cmdr)) {
     const ident = commanderIdentity(deck);

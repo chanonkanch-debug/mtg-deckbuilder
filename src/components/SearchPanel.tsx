@@ -63,8 +63,8 @@ export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, o
 
   // The search is empty until the user types something or picks a filter or set.
   const hasQuery = !!submitted.trim() || filters.size > 0 || sets.size > 0;
-  const query = useMemo(() => hasQuery ? buildQuery(deck, { text: submitted, filters, sets, onlyLegal, onlyIdentity }) : '',
-    [hasQuery, deck, submitted, filters, sets, onlyLegal, onlyIdentity]);
+  const query = useMemo(() => hasQuery ? buildQuery(deck, { text: submitted, filters, sets, onlyLegal, onlyIdentity, allArts }) : '',
+    [hasQuery, deck, submitted, filters, sets, onlyLegal, onlyIdentity, allArts]);
   const url = query ? searchUrl({ q: query, order: prefs.order, dir: prefs.dir, allArts }) : null;
   const countIn = (groups: typeof FILTERS) => groups.reduce((n, g) => n + g.options.filter((_, i) => filters.has(`${g.key}:${i}`)).length, 0);
 

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { searchUrl, type Card } from './scryfall';
 import { checkDeck, copyLimit, deckStats, type Deck, type DeckEntry } from './rules';
 import { exportList, parseList } from './decklist';
-import { buildQuery, filterQuery } from './filters';
+import { buildQuery, filterQuery, REGULAR_PRINTS } from './filters';
 import { ARCHETYPES } from './archetypes';
 
 const legal = { standard: 'legal', pioneer: 'legal', modern: 'legal', legacy: 'legal', vintage: 'legal', pauper: 'legal', commander: 'legal' } as const;
@@ -106,6 +106,14 @@ describe('archetype queries', () => {
   it('wraps OR queries so they combine safely with other terms', () => {
     expect(filterQuery(new Set(['strategy:0', 'tribe:0']))).toBe('t:creature mv<=2 pow>=2 (t:goblin or o:goblin)');
     expect(filterQuery(new Set(['theme:4', 'theme:5']))).toBe('(o:"+1/+1 counter" or (kw:lifelink or o:/whenever you gain life/ or o:/you gain \\d+ life/))');
+  });
+  it('limits rarity searches to regular printings unless showing all arts', () => {
+    const d = deckOf('modern', []);
+    const base = { text: '', sets: new Set<string>(), onlyLegal: false, onlyIdentity: false };
+    expect(buildQuery(d, { ...base, filters: new Set(['rarity:2']) })).toBe(`r:rare ${REGULAR_PRINTS}`);
+    expect(buildQuery(d, { ...base, text: 'goblin r>=rare', filters: new Set() })).toBe(`goblin r>=rare ${REGULAR_PRINTS}`);
+    expect(buildQuery(d, { ...base, filters: new Set(['rarity:2']), allArts: true })).toBe('r:rare');
+    expect(buildQuery(d, { ...base, text: 'o:"draw a card"', filters: new Set(['mv:1']) })).toBe('o:"draw a card" mv=1');
   });
   it('wraps typed text that uses or', () => {
     const d = deckOf('modern', []);
