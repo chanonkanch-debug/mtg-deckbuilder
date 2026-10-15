@@ -24,8 +24,10 @@ export function saveStore(store: Store) {
   try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch {}
 }
 
-export interface Prefs { dir: 'asc' | 'desc'; zoom: number; hoverZoom: boolean; order: string }
-const DEFAULT_PREFS: Prefs = { dir: 'asc', zoom: 2, hoverZoom: true, order: 'name' };
+export type DeckView = 'list' | 'visual';
+export type GroupBy = 'type' | 'mv' | 'color';
+export interface Prefs { dir: 'asc' | 'desc'; zoom: number; hoverZoom: boolean; order: string; deckView: DeckView; groupBy: GroupBy }
+const DEFAULT_PREFS: Prefs = { dir: 'asc', zoom: 2, hoverZoom: true, order: 'name', deckView: 'list', groupBy: 'type' };
 
 /** Display preferences (sort, zoom, hover) remembered between visits. */
 export function usePrefs() {

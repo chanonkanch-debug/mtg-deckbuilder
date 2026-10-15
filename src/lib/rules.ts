@@ -82,7 +82,7 @@ export function primaryType(card: Card): string {
 
 export interface DeckStats {
   curve: number[]; // index 0..6, 7 = 7+
-  main: number; side: number; lands: number; avgMv: number; price: number;
+  main: number; side: number; cmdr: number; lands: number; avgMv: number; price: number;
   pips: Record<'W' | 'U' | 'B' | 'R' | 'G' | 'C', number>;
 }
 export function deckStats(deck: Deck): DeckStats {
@@ -100,6 +100,7 @@ export function deckStats(deck: Deck): DeckStats {
     curve,
     main: countBoard(deck, 'main'),
     side: countBoard(deck, 'side'),
+    cmdr: countBoard(deck, 'cmdr'),
     lands: mainEntries.filter(e => primaryType(e.card) === 'Land').reduce((s, e) => s + e.main, 0),
     avgMv: nSpells ? spells.reduce((s, e) => s + e.card.cmc * e.main, 0) / nSpells : 0,
     price: all.reduce((s, e) => s + (parseFloat(e.card.usd || '') || 0) * (e.main + e.side + e.cmdr), 0),

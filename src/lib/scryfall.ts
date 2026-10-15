@@ -17,6 +17,8 @@ export interface Card {
   oracle_text: string;
   colors: string[];
   color_identity: string[];
+  /** Colors of mana the card can produce (lands, rocks, dorks). Missing on decks saved before it was added. */
+  produced_mana?: string[];
   legalities: Record<string, Legality>;
   img: string;
   img_small: string;
@@ -162,6 +164,7 @@ export function slimCard(c: any): Card {
     oracle_text: c.oracle_text ?? faces.map(f => f.oracle_text || '').join('\n'),
     colors: [...new Set(colors)],
     color_identity: c.color_identity || [],
+    produced_mana: c.produced_mana,
     legalities: c.legalities || {},
     img: imgs.normal || imgs.large || imgs.small || '',
     img_small: imgs.small || imgs.normal || '',
