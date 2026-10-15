@@ -80,6 +80,9 @@ export function primaryType(card: Card): string {
   return TYPE_ORDER.find(t => front.includes(t)) || 'Other';
 }
 
+/** Lands, plus modal double-faced cards whose back face is a land (usually played as the land). */
+export const playsAsLand = (card: Card) => primaryType(card) === 'Land' || /\/\/.*\bLand\b/.test(card.type_line);
+
 export interface DeckStats {
   curve: number[]; // index 0..6, 7 = 7+
   main: number; side: number; cmdr: number; lands: number; avgMv: number; price: number;

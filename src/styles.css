@@ -185,3 +185,5 @@
   .bad-text { color: var(--bad); font-weight: 600; }
   .sample-game { margin-top: 10px; }
   .game-log { margin: 0; padding-left: 0; list-style: none; display: grid; gap: 3px; }
+  .goldfish-bar { margin-bottom: 8px; }
+  .stale .tiles, .stale .goldfish-table, .stale .stuck { opacity: .5; transition: opacity .15s; }

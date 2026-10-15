@@ -2,14 +2,14 @@
 // Follows Frank Karsten's approach: on the play, assuming you hit every land drop, and aiming for 90%.
 import type { Card } from './scryfall';
 import type { Deck } from './rules';
-import { entriesOf, primaryType } from './rules';
+import { entriesOf, playsAsLand } from './rules';
 import { COLORS, fetchTargets, landColors } from './analysis';
 
 export const TARGET = 0.9;
 const HAND = 7;
 const SAMPLES = 10000;
 
-const isLand = (c: Card) => primaryType(c) === 'Land';
+const isLand = playsAsLand;
 
 /**
  * The colored requirements of a mana cost, one set of acceptable colors per symbol.
@@ -18,7 +18,8 @@ const isLand = (c: Card) => primaryType(c) === 'Land';
  */
 export function colorRequirements(cost: string): string[][] {
   const reqs: string[][] = [];
-  for (const [, sym] of cost.matchAll(/\{([^}]+)\}/g)) {
+  // Split, adventure and double-faced cards list each face's cost; the front face is the one cast on curve.
+  for (const [, sym] of cost.split(' // ')[0].matchAll(/\{([^}]+)\}/g)) {
     const parts = sym.split('/');
     if (parts.includes('P') || parts.some(p => /^\d+$/.test(p))) continue;
     const colors = parts.filter(p => (COLORS as readonly string[]).includes(p) || p === 'C');

@@ -2,7 +2,7 @@
 // mulligans, mana screw and flood, mana used per turn, and which cards get stuck in hand.
 import type { Card } from './scryfall';
 import type { Deck } from './rules';
-import { entriesOf, primaryType } from './rules';
+import { entriesOf, playsAsLand } from './rules';
 import { fetchTargets, landColors, type FetchTargets } from './analysis';
 import { colorRequirements } from './castability';
 import { rolesOf } from './roles';
@@ -33,7 +33,7 @@ const ALL = ['W', 'U', 'B', 'R', 'G'];
 
 function prepare(card: Card, fetch: FetchTargets): SimCard {
   const text = card.oracle_text.toLowerCase().replace(/\([^)]*\)/g, '');
-  const land = primaryType(card) === 'Land';
+  const land = playsAsLand(card);
   const spell = /\b(Instant|Sorcery)\b/.test(card.type_line);
   const roles = land ? [] : rolesOf(card);
   let makes: Mana[] = [], rampLands = 0, draws = 0;
@@ -205,7 +205,8 @@ function playGame(library: SimCard[], commanders: SimCard[], random: () => numbe
   return { mulligans, turns, stuck, drawn, cmdrTurn, log, hand: opening, seenLands6 };
 }
 
-export function goldfish(deck: Deck, games = 2000): Goldfish | null {
+/** Simulates `games` games. The same deck and seed always give the same numbers; a new seed plays different games. */
+export function goldfish(deck: Deck, games = 2000, seed = 0): Goldfish | null {
   const fetch = fetchTargets(deck);
   const fetchColors = fetch.basic.length ? fetch.basic : ALL;
   const entries = entriesOf(deck);
@@ -213,7 +214,7 @@ export function goldfish(deck: Deck, games = 2000): Goldfish | null {
   const library = entries.flatMap(e => Array.from({ length: e.main }, () => prepared.get(e.card.id)!));
   if (library.length < HAND + TURNS) return null;
   const cmdrs = entries.filter(e => e.cmdr && !prepared.get(e.card.id)!.land).map(e => prepared.get(e.card.id)!);
-  const random = mulberry32(library.length * 31 + library.filter(c => c.land).length);
+  const random = mulberry32(library.length * 31 + library.filter(c => c.land).length + seed * 7919);
 
   let mulligan = 0, screw = 0, flood = 0, cmdrCast = 0, cmdrOnCurve = 0, cmdrTurns = 0;
   const totals = Array.from({ length: TURNS }, (_, i) => ({ turn: i + 1, lands: 0, available: 0, spent: 0, idle: 0 }));
