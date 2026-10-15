@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import ManaText from './ManaText';
 import { fetchCollection, type Card } from '../lib/scryfall';
 import { checkDeck, deckStats, FORMAT_RULES, type Board, type Deck, type DeckEntry } from '../lib/rules';
 import { groupDeck, type Group } from '../lib/analysis';
@@ -145,7 +146,7 @@ function DeckRow({ entry: e, board, format, onAdd, onMove, onPreview, onOpen }: 
       <span className="qty">{e[board]}</span>
       <span className="name" onMouseMove={ev => onPreview(ev, e.card.img_large || e.card.img || null)}>{e.card.name}</span>
       {legalityFlag(e.card, format)}
-      <span className="cost">{e.card.mana_cost}</span>
+      <ManaText className="cost" text={e.card.mana_cost} />
       <RowButtons entry={e} board={board} onAdd={onAdd} onMove={onMove} />
     </li>
   );
@@ -159,7 +160,7 @@ function VisualGroup({ group, format, onAdd, onMove, onPreview, onOpen }: RowPro
         <div className="stack-card" key={e.card.id} onContextMenu={openOnRightClick(e.card, onOpen)}>
           {e.card.img
             ? <img src={e.card.img} alt={e.card.name} loading="lazy" onMouseMove={ev => onPreview(ev, e.card.img_large || e.card.img)} />
-            : <div className="noimg"><b>{e.card.name}</b><br />{e.card.mana_cost}</div>}
+            : <div className="noimg"><b>{e.card.name}</b><br /><ManaText text={e.card.mana_cost} /></div>}
           <span className="stack-qty">{e[group.board]}×</span>
           {legalityFlag(e.card, format) && <span className="stack-flag">{legalityFlag(e.card, format)}</span>}
           <span className="stack-btns"><RowButtons entry={e} board={group.board} onAdd={onAdd} onMove={onMove} /></span>

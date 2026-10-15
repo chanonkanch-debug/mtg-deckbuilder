@@ -248,3 +248,10 @@ export async function fetchCollection(ids: CollectionId[]): Promise<{ found: Car
   }
   return { found, notFound };
 }
+
+/** Map of mana/card symbols like "{R}" or "{W/U}" to their SVG image on Scryfall's CDN. */
+export async function fetchSymbology(): Promise<Record<string, string>> {
+  const { value } = await cachedGet('/symbology', res =>
+    Object.fromEntries((res.data as any[]).filter(s => s.svg_uri).map(s => [s.symbol, s.svg_uri])));
+  return value;
+}

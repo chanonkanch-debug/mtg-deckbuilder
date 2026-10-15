@@ -4,6 +4,7 @@ A Magic: The Gathering deck builder that runs entirely in the browser, using the
 
 ## Features
 
+- Mana and card symbols drawn with Scryfall's symbol images
 - Card search with Scryfall syntax, name autocomplete, and sorting in either direction
 - Quick filters for mana value, card type, color and rarity, plus a set picker
 - 20 results per page, adjustable card size, hover-to-enlarge, and a right-click card view
@@ -15,6 +16,17 @@ A Magic: The Gathering deck builder that runs entirely in the browser, using the
 - Decks are saved in the browser's localStorage
 
 Requests to Scryfall are spaced 100 ms apart as Scryfall asks, and GET responses are cached for 24 hours.
+
+## Roadmap
+
+**Phase 2** (planned, not started)
+
+1. Backend for accounts, so decks are saved per account and sync across devices
+2. Decks shared by link
+3. A collection tab to track the cards you own (needs its own design pass)
+4. A local AI assistant for deck building
+
+**Phase 3 and beyond:** features other deck builders such as Moxfield don't offer.
 
 ## Development
 

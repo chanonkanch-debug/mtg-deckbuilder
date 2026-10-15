@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import ManaText from './ManaText';
 import { autocomplete, searchCards, searchUrl, type Card } from '../lib/scryfall';
 import { canBeCommander, type Board, type Deck } from '../lib/rules';
 import { buildQuery } from '../lib/filters';
@@ -236,7 +237,7 @@ export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, o
               />
             ) : (
               <div className="noimg" onClick={() => onAdd(c, 'main')}>
-                <b>{c.name}</b><br />{c.mana_cost}<br />{c.type_line}
+                <b>{c.name}</b><br /><ManaText text={c.mana_cost} /><br />{c.type_line}
               </div>
             )}
             <div className="btns">
