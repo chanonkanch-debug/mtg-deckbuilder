@@ -17,7 +17,7 @@ const PAGE_SIZE = 20;
 const FILTER_DELAY_MS = 450;
 
 const SORTS: [string, string][] = [
-  ['name', 'name'], ['cmc', 'mana value'], ['edhrec', 'EDHREC rank'], ['usd', 'price'],
+  ['name', 'name'], ['cmc', 'mana value'], ['color', 'color'], ['edhrec', 'EDHREC rank'], ['usd', 'price'],
   ['released', 'release date'], ['rarity', 'rarity'], ['power', 'power'], ['toughness', 'toughness'],
 ];
 
