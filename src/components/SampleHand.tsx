@@ -31,16 +31,14 @@ export default function SampleHand({ deck, onPreview, onHidePreview, onOpen }: P
 
   if (all.length < HAND) {
     return (
-      <details className="sample">
-        <summary>Sample hand</summary>
+      <div className="sample">
         <p className="small muted">Add at least {HAND} cards to the main deck to draw a sample hand.</p>
-      </details>
+      </div>
     );
   }
 
   return (
-    <details className="sample">
-      <summary>Sample hand</summary>
+    <div className="sample">
       <p className="small muted" style={{ marginTop: 0 }}>
         Opening 7 with {lands} land{lands === 1 ? '' : 's'} in {all.length} cards: 2–4 lands {odds(2, 4)}% · 0–1 lands {odds(0, 1)}% · 5+ lands {odds(5, HAND)}%
       </p>
@@ -66,6 +64,6 @@ export default function SampleHand({ deck, onPreview, onHidePreview, onOpen }: P
           ))}
         </div>
       )}
-    </details>
+    </div>
   );
 }

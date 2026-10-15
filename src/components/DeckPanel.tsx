@@ -8,7 +8,6 @@ import type { Prefs } from '../lib/storage';
 import Checkup, { useDeckSim } from './Checkup';
 import { cardWarnings, type CardWarning } from '../lib/doctor';
 import type { SearchRequest } from './SearchPanel';
-import SampleHand from './SampleHand';
 
 interface Props {
   deck: Deck;
@@ -81,7 +80,6 @@ export default function DeckPanel({ deck, prefs, setPrefs, onAdd, onMove, onRepl
       </div>
 
       <Checkup deck={deck} prefs={prefs} setPrefs={setPrefs} onPreview={onPreview} onHidePreview={onHidePreview} onOpen={onOpen} onSearch={onSearch} sim={sim} busy={busy} />
-      <SampleHand deck={deck} onPreview={onPreview} onHidePreview={onHidePreview} onOpen={onOpen} />
       <ImportExport deck={deck} onReplaceCards={onReplaceCards} toast={toast} />
     </section>
   );

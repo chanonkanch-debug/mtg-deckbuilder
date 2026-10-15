@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import ManaText from './ManaText';
+import SampleHand from './SampleHand';
 import type { Deck } from '../lib/rules';
 import { COLOR_NAMES, COLORS, curveByColor, manaBase, typeCounts } from '../lib/analysis';
 import { castability, TARGET } from '../lib/castability';
@@ -7,8 +8,8 @@ import { roleCounts } from '../lib/roles';
 import { goldfish, sampleGame, TURNS, type Goldfish as GoldfishResult } from '../lib/goldfish';
 import type { Card } from '../lib/scryfall';
 
-export type Tab = 'curve' | 'types' | 'mana' | 'cast' | 'roles' | 'goldfish';
-const TABS: [Tab, string][] = [['curve', 'Curve'], ['types', 'Types'], ['mana', 'Mana base'], ['cast', 'Castability'], ['roles', 'Roles'], ['goldfish', 'Goldfish']];
+export type Tab = 'curve' | 'types' | 'mana' | 'cast' | 'roles' | 'goldfish' | 'hand';
+const TABS: [Tab, string][] = [['curve', 'Curve'], ['types', 'Types'], ['mana', 'Mana base'], ['cast', 'Castability'], ['roles', 'Roles'], ['goldfish', 'Simulation'], ['hand', 'Sample hand']];
 // Stack order bottom to top. Colors come from the --mana-* tokens in styles.css.
 const STACK = [...COLORS, 'M', 'C'];
 
@@ -30,12 +31,15 @@ export default function DeckStats({ deck, onPreview, onHidePreview, onOpen, onFi
           <button key={key} type="button" role="tab" aria-selected={tab === key} onClick={() => setTab(key)}>{label}</button>
         ))}
       </div>
-      {tab === 'curve' && <Curve deck={deck} />}
-      {tab === 'types' && <Types deck={deck} />}
-      {tab === 'mana' && <ManaBase deck={deck} />}
-      {tab === 'goldfish' && <Goldfish deck={deck} />}
-      {tab === 'roles' && <Roles deck={deck} onPreview={onPreview} onHidePreview={onHidePreview} onOpen={onOpen} onFindMore={onFindMore} />}
-      {tab === 'cast' && <Castability deck={deck} onPreview={onPreview} onHidePreview={onHidePreview} onOpen={onOpen} />}
+      <div className="tab-body" role="tabpanel">
+        {tab === 'curve' && <Curve deck={deck} />}
+        {tab === 'types' && <Types deck={deck} />}
+        {tab === 'mana' && <ManaBase deck={deck} />}
+        {tab === 'goldfish' && <Goldfish deck={deck} />}
+        {tab === 'hand' && <SampleHand deck={deck} onPreview={onPreview} onHidePreview={onHidePreview} onOpen={onOpen} />}
+        {tab === 'roles' && <Roles deck={deck} onPreview={onPreview} onHidePreview={onHidePreview} onOpen={onOpen} onFindMore={onFindMore} />}
+        {tab === 'cast' && <Castability deck={deck} onPreview={onPreview} onHidePreview={onHidePreview} onOpen={onOpen} />}
+      </div>
     </div>
   );
 }
