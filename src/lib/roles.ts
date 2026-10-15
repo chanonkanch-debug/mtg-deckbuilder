@@ -77,6 +77,28 @@ export function rolesOf(card: Card): Role[] {
   return ROLES.filter(r => r.test(text, card)).map(r => r.key);
 }
 
+const WORDS: Record<string, number> = { a: 1, an: 1, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7 };
+const ALL = ['W', 'U', 'B', 'R', 'G'];
+
+/**
+ * Mana a nonland permanent adds each turn, one entry per mana listing the colors it can be ('C' for colorless):
+ * Sol Ring gives [['C'], ['C']], Birds of Paradise [['W','U','B','R','G']]. Empty for cards that make no mana.
+ */
+export function manaMade(card: Card): string[][] {
+  if (isLand(card) || isSpell(card) || !rolesOf(card).includes('ramp')) return [];
+  const text = card.oracle_text.toLowerCase().replace(/\([^)]*\)/g, '');
+  const add = text.match(/add ((\{[^}]+\})+|one mana|two mana|three mana)/);
+  if (!add) return [];
+  const syms = add[1].match(/\{[^}]+\}/g);
+  const any = /any color|any type|commander's color identity/.test(text);
+  const produced = (card.produced_mana ?? []).filter(c => ALL.includes(c) || c === 'C');
+  const colors = any ? ALL : produced.length ? produced : ['C'];
+  const n = syms ? syms.length : WORDS[add[1].split(' ')[0]] ?? 1;
+  // "{T}: Add {R} or {G}" lists two symbols but makes one mana.
+  const one = syms && / or \{/.test(text.slice(add.index!, add.index! + 40));
+  return Array.from({ length: one ? 1 : n }, (_, i) => (syms && !one && !any ? [syms[i].slice(1, -1)] : colors));
+}
+
 /**
  * Targets per role. Commander uses the widely used Command Zone deck template; 60-card decks vary too much
  * by archetype for one set of numbers, so they get counts only.
