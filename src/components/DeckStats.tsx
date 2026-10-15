@@ -22,12 +22,16 @@ interface Props {
   onFindMore: (archetype: string) => void;
 }
 
-export default function DeckStats({ deck, onPreview, onHidePreview, onOpen, onFindMore, tab, setTab }: Props & { tab: Tab; setTab: (t: Tab) => void }) {
-  if (!TABS.some(([k]) => k === tab)) tab = 'curve';
+/** Basic stats shown on the page, and the in-depth tabs shown in the Deck details window. */
+export const BASIC_TABS: Tab[] = ['curve', 'types', 'mana'];
+export const DETAIL_TABS: Tab[] = ['cast', 'roles', 'goldfish', 'hand'];
+
+export default function DeckStats({ deck, onPreview, onHidePreview, onOpen, onFindMore, tabs, tab, setTab }: Props & { tabs: Tab[]; tab: Tab; setTab: (t: Tab) => void }) {
+  if (!tabs.includes(tab)) tab = tabs[0];
   return (
     <div className="deck-stats">
       <div className="tabs" role="tablist">
-        {TABS.map(([key, label]) => (
+        {TABS.filter(([key]) => tabs.includes(key)).map(([key, label]) => (
           <button key={key} type="button" role="tab" aria-selected={tab === key} onClick={() => setTab(key)}>{label}</button>
         ))}
       </div>

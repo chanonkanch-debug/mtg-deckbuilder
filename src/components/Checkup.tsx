@@ -1,22 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Card } from '../lib/scryfall';
 import type { Deck } from '../lib/rules';
-import type { Prefs } from '../lib/storage';
 import { checkup, compare, readiness, type Action, type Change, type Snapshot } from '../lib/doctor';
 import { goldfish, type Goldfish } from '../lib/goldfish';
-import DeckStats, { type Tab } from './DeckStats';
 import type { SearchRequest } from './SearchPanel';
 
 interface Props {
   deck: Deck;
-  prefs: Prefs;
-  setPrefs: (p: Partial<Prefs>) => void;
-  onPreview: (e: React.MouseEvent, src: string | null) => void;
-  onHidePreview: () => void;
   onOpen: (card: Card) => void;
   onSearch: (req: SearchRequest) => void;
   sim: Goldfish | null;
   busy: boolean;
+  /** Opens the Deck details window on a tab. */
+  onOpenDetails: (tab: string) => void;
 }
 
 /** Simulates the deck after a pause in edits. Results are cached per deck, so the Goldfish tab's run 1 reuses them. */
@@ -35,12 +31,11 @@ export function useDeckSim(deck: Deck): { sim: Goldfish | null; busy: boolean } 
 const SHOWN = 4;
 const pct = (p: number) => `${Math.round(p * 100)}%`;
 
-/** The deck panel's main analysis: a few plain-language problems with a fix for each, and the detailed tabs on request. */
-export default function Checkup({ deck, prefs, setPrefs, onPreview, onHidePreview, onOpen, onSearch, sim, busy }: Props) {
+/** The deck panel's main analysis: a few plain-language problems, worst first, with a fix for each. */
+export default function Checkup({ deck, onOpen, onSearch, sim, busy, onOpenDetails }: Props) {
   const [showAll, setShowAll] = useState(false);
   const [changes, setChanges] = useState<Change[]>([]);
   const last = useRef<Snapshot | null>(null);
-  const [detailsOpen, setDetailsOpen] = useState(false);
 
   const cards = Object.keys(deck.cards).length;
   const { ready, have, need } = readiness(deck);
@@ -55,13 +50,9 @@ export default function Checkup({ deck, prefs, setPrefs, onPreview, onHidePrevie
   }, [findings]);
   const shown = showAll ? findings : findings.slice(0, SHOWN);
 
-  const openDetails = (tab: string) => {
-    setPrefs({ detailsTab: tab });
-    setDetailsOpen(true);
-  };
   const act = (a: Action) => {
     if (a.kind === 'search') onSearch({ query: a.query, archetype: a.archetype });
-    else if (a.kind === 'details') openDetails(a.tab);
+    else if (a.kind === 'details') onOpenDetails(a.tab);
     else onOpen(a.card);
   };
 
@@ -116,40 +107,6 @@ export default function Checkup({ deck, prefs, setPrefs, onPreview, onHidePrevie
         </button>
       )}
 
-      <div className="details-toggle">
-        <button type="button" className="small" onClick={() => setDetailsOpen(true)}>Deck details</button>
-        <span className="small muted"> Curve, mana base, castability, roles, simulation and sample hands</span>
-      </div>
-      {detailsOpen && (
-        <DetailsWindow deck={deck} tab={prefs.detailsTab as Tab} setTab={t => setPrefs({ detailsTab: t })} onClose={() => setDetailsOpen(false)}
-          onPreview={onPreview} onHidePreview={onHidePreview} onOpen={onOpen}
-          onFindMore={archetype => { setDetailsOpen(false); onSearch({ archetype }); }} />
-      )}
     </section>
-  );
-}
-
-/** The detailed analysis tabs in a fixed-size window over the page, so nothing below the deck needs scrolling to. */
-function DetailsWindow({ deck, tab, setTab, onClose, onPreview, onHidePreview, onOpen, onFindMore }: {
-  deck: Deck; tab: Tab; setTab: (t: Tab) => void; onClose: () => void; onFindMore: (archetype: string) => void;
-} & Pick<Props, 'onPreview' | 'onHidePreview' | 'onOpen'>) {
-  const closeRef = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    closeRef.current?.focus();
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !document.getElementById('modal')) onClose(); };
-    document.addEventListener('keydown', onKey);
-    document.body.style.overflow = 'hidden';
-    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = ''; };
-  }, [onClose]);
-  return (
-    <div className="details-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="details-window" role="dialog" aria-modal="true" aria-label="Deck details">
-        <div className="details-head">
-          <b>{deck.name || 'Deck'} details</b>
-          <button type="button" ref={closeRef} className="close" title="Close (Esc)" onClick={onClose}>✕</button>
-        </div>
-        <DeckStats deck={deck} tab={tab} setTab={setTab} onPreview={onPreview} onHidePreview={onHidePreview} onOpen={onOpen} onFindMore={onFindMore} />
-      </div>
-    </div>
   );
 }
