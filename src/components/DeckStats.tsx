@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import ManaText from './ManaText';
 import SampleHand from './SampleHand';
 import type { Deck } from '../lib/rules';
-import { COLOR_NAMES, COLORS, curveByColor, manaBase, typeCounts } from '../lib/analysis';
-import { castability, TARGET } from '../lib/castability';
+import { COLOR_NAMES, COLORS, curveByColor, landColorCounts, manaBase, typeCounts } from '../lib/analysis';
+import { castability, RELIABLE, reliable, TARGET } from '../lib/castability';
 import { roleCounts } from '../lib/roles';
 import { goldfish, sampleGame, TURNS, type Goldfish as GoldfishResult } from '../lib/goldfish';
 import type { Card } from '../lib/scryfall';
@@ -98,9 +98,20 @@ function Types({ deck }: { deck: Deck }) {
 
 function ManaBase({ deck }: { deck: Deck }) {
   const { rows, lands } = manaBase(deck);
-  if (!rows.length) return <p className="small muted">Add colored spells to see how your lands should be split.</p>;
+  const counts = landColorCounts(deck);
+  const landLine = counts.lands > 0 && (
+    <p className="small land-summary">
+      <b>{counts.lands} land{counts.lands === 1 ? '' : 's'}</b>
+      <span className="land-colors">
+        {counts.byColor.map(c => <span key={c.color}><ManaText text={`{${c.color}}`} /> {c.count}</span>)}
+        {counts.colorless > 0 && <span><ManaText text="{C}" /> {counts.colorless} colorless</span>}
+      </span>
+    </p>
+  );
+  if (!rows.length) return <>{landLine}<p className="small muted">Add colored spells to see how your lands should be split.</p></>;
   return (
     <>
+      {landLine}
       <table className="mana-table">
         <thead>
           <tr><th>Color</th><th>Mana symbols</th><th>Share</th><th>Lands making it</th><th>Suggested lands</th></tr>
@@ -126,22 +137,22 @@ function ManaBase({ deck }: { deck: Deck }) {
 }
 
 const pct = (p: number) => `${Math.round(p * 100)}%`;
-const level = (p: number) => (p >= TARGET ? 'ok' : p >= 0.8 ? 'warn' : 'bad');
+const level = (p: number) => (reliable(p) ? 'ok' : p >= 0.8 ? 'warn' : 'bad');
 
 function Castability({ deck, onPreview, onHidePreview, onOpen }: Omit<Props, 'onFindMore'>) {
   const { rows, landDrops, lands, deckSize } = useMemo(() => castability(deck), [deck]);
   if (deckSize < 7) return <p className="small muted">Add at least 7 cards to the main deck to check castability.</p>;
   if (!rows.length) return <p className="small muted">Add colored spells to see how reliably you can cast them.</p>;
-  const below = rows.filter(r => r.odds < TARGET).length;
+  const below = rows.filter(r => !reliable(r.odds)).length;
   return (
     <>
       <p className="small cast-summary">
-        <b className={below ? 'bad' : 'ok'}>{below ? `${below} of ${rows.length} spells below ${pct(TARGET)}` : `All ${rows.length} spells at ${pct(TARGET)} or better`}</b>
+        <b className={below ? 'bad' : 'ok'}>{below ? `${below} of ${rows.length} spells below ${pct(RELIABLE)}` : `All ${rows.length} spells at ${pct(RELIABLE)} or better`}</b>
         <span className="muted"> · {lands} lands in {deckSize} cards · hitting land drops: {landDrops.map(d => `turn ${d.turn} ${pct(d.odds)}`).join(', ')}</span>
       </p>
       <table className="mana-table cast-table" onMouseLeave={onHidePreview}>
         <thead>
-          <tr><th>Card</th><th>Turn</th><th>On curve</th><th>To reach {pct(TARGET)}</th></tr>
+          <tr><th>Card</th><th>Turn</th><th>On curve</th><th>How to fix</th></tr>
         </thead>
         <tbody>
           {rows.map(r => (
@@ -153,7 +164,7 @@ function Castability({ deck, onPreview, onHidePreview, onOpen }: Omit<Props, 'on
               <td>{r.turn}</td>
               <td><span className={`cast-odds ${level(r.odds)}`}>{pct(r.odds)}</span></td>
               <td className="small">
-                {r.odds >= TARGET ? <span className="muted">OK</span>
+                {reliable(r.odds) ? <span className="muted">OK</span>
                   : r.short.length ? r.short.map(s => (
                     <div key={s.color}>
                       {s.need === null
@@ -169,7 +180,7 @@ function Castability({ deck, onPreview, onHidePreview, onOpen }: Omit<Props, 'on
       </table>
       <p className="small muted">
         The chance you have the right colors to cast each spell on the turn equal to its mana value, on the play, assuming you hit
-        every land drop. {pct(TARGET)} is Frank Karsten's guideline for a reliable mana base. Only lands count as sources (fetch lands
+        every land drop. Green means {pct(RELIABLE)} or better; source suggestions aim for {pct(TARGET)}, Frank Karsten's guideline for a reliable mana base. Only lands count as sources (fetch lands
         count as the colors they can find); mana rocks and dorks are not counted.
       </p>
     </>

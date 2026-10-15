@@ -4,7 +4,7 @@ import type { Card } from './scryfall';
 import type { Deck } from './rules';
 import { countBoard, FORMAT_RULES } from './rules';
 import { COLOR_NAMES } from './analysis';
-import { castability, TARGET } from './castability';
+import { castability, RELIABLE, reliable } from './castability';
 import { roleCounts } from './roles';
 import type { Goldfish } from './goldfish';
 
@@ -28,7 +28,7 @@ export function checkup(deck: Deck, sim: Goldfish | null): Finding[] {
   // Colors: one finding per color the deck is short on.
   const cast = castability(deck);
   const byColor = new Map<string, { cards: typeof cast.rows; have: number; need: number | null }>();
-  cast.rows.filter(r => r.odds < TARGET).forEach(r => r.short.forEach(s => {
+  cast.rows.filter(r => !reliable(r.odds)).forEach(r => r.short.forEach(s => {
     const e = byColor.get(s.color) ?? { cards: [], have: s.have, need: s.need };
     e.cards.push(r);
     e.need = e.need === null || s.need === null ? null : Math.max(e.need, s.need);
@@ -120,8 +120,8 @@ export interface CardWarning { label: string; detail: string }
 export function cardWarnings(deck: Deck, sim: Goldfish | null): Map<string, CardWarning[]> {
   const out = new Map<string, CardWarning[]>();
   const add = (id: string, w: CardWarning) => out.set(id, [...(out.get(id) ?? []), w]);
-  castability(deck).rows.filter(r => r.odds < TARGET).forEach(r => add(r.card.id, {
-    label: 'hard to cast', detail: `Castable on turn ${r.turn} in ${pct(r.odds)} of games; aim for ${pct(TARGET)}.`,
+  castability(deck).rows.filter(r => !reliable(r.odds)).forEach(r => add(r.card.id, {
+    label: 'hard to cast', detail: `Castable on turn ${r.turn} in ${pct(r.odds)} of games; ${pct(RELIABLE)} or better is reliable.`,
   }));
   sim?.stuck.filter(s => s.rate >= 0.3).forEach(s => add(s.card.id, {
     label: 'often stuck', detail: `Still in hand on turn 8 with spare mana in ${pct(s.rate)} of games where you draw it.`,

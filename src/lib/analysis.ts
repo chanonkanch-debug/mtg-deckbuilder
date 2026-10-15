@@ -111,6 +111,20 @@ export function colorsFor(colors: string[], limit: ((spell: Card) => boolean) | 
   return !limit || limit(spell) ? colors : colors.filter(c => c === 'C');
 }
 
+export interface LandColorCount { lands: number; byColor: { color: string; count: number }[]; colorless: number }
+
+/** How many of the deck's lands make each color (a dual counts for both), and how many make no colored mana. */
+export function landColorCounts(deck: Deck): LandColorCount {
+  const fetch = fetchTargets(deck);
+  const main = entriesOf(deck).filter(e => e.main && isLand(e.card));
+  const colorsOf = main.map(e => ({ n: e.main, colors: landColors(e.card, fetch) }));
+  return {
+    lands: main.reduce((n, e) => n + e.main, 0),
+    byColor: COLORS.map(color => ({ color, count: colorsOf.filter(l => l.colors.includes(color)).reduce((n, l) => n + l.n, 0) })).filter(c => c.count),
+    colorless: colorsOf.filter(l => !l.colors.some(c => c !== 'C')).reduce((n, l) => n + l.n, 0),
+  };
+}
+
 /**
  * Compares colored mana symbols in nonland cards with lands that produce each color, and suggests
  * splitting the deck's current land count in proportion to the symbols.

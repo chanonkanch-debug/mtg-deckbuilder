@@ -3,7 +3,7 @@ import ManaText from './ManaText';
 import { autocomplete, searchCards, searchUrl, type Card } from '../lib/scryfall';
 import { canBeCommander, type Board, type Deck } from '../lib/rules';
 import { buildQuery } from '../lib/filters';
-import type { Prefs } from '../lib/storage';
+import { ZOOM_LEVELS, type Prefs } from '../lib/storage';
 import FilterChips from './FilterChips';
 import SyntaxGuide from './SyntaxGuide';
 import { FILTERS } from '../lib/filters';
@@ -13,7 +13,6 @@ import SetPicker from './SetPicker';
 // Results show PAGE_SIZE cards at a time. Scryfall returns up to 175 per request,
 // so the next Scryfall page is only fetched when paging past what is already loaded.
 const PAGE_SIZE = 20;
-const ZOOM_LEVELS = [90, 110, 140, 170, 200, 240, 300];
 // Filter clicks wait briefly so several quick clicks send one search.
 const FILTER_DELAY_MS = 450;
 

@@ -37,8 +37,9 @@
   .result .btns { display: flex; gap: 4px; }
   .result .btns button { flex: 1; padding: 3px 0; font-size: 12px; }
   .deck-group ul { list-style: none; margin: 0; padding: 0; }
-  .deck-group li { display: flex; align-items: center; gap: 6px; padding: 2px 0; border-bottom: 1px dashed transparent; }
-  .deck-group li:hover { border-bottom-color: var(--border); }
+  #deckList:not(.visual) { font-size: var(--deck-font, 14px); }
+  .deck-group li { display: flex; align-items: center; gap: 6px; padding: 2px 4px; margin: 0 -4px; border-radius: 4px; }
+  .deck-group li:hover { background: color-mix(in srgb, var(--accent) 14%, transparent); box-shadow: inset 3px 0 0 var(--accent); }
   .deck-group li .qty { width: 22px; text-align: right; font-variant-numeric: tabular-nums; }
   .deck-group li .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: default; }
   .deck-group li .cost { color: var(--muted); font-size: 12px; white-space: nowrap; }
@@ -121,10 +122,13 @@
   .seg button[aria-pressed="true"], .tabs button[aria-selected="true"] { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
   .group-toggle { background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; }
   .group-toggle .caret { display: inline-block; width: 10px; }
+  .land-colors { display: inline-flex; flex-wrap: wrap; gap: 4px 10px; margin-left: 10px; font-weight: 400; vertical-align: middle; }
+  .land-colors > span { white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--text); }
+  .land-summary { margin: 0 0 8px; }
   /* Visual view: each group is a column of overlapping cards showing their title bars. */
   #deckList.visual { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; }
   #deckList.visual > p { flex-basis: 100%; }
-  #deckList.visual .deck-group { width: 132px; }
+  #deckList.visual .deck-group { width: var(--deck-card-w, 132px); }
   #deckList.visual .deck-group h3 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .stack { display: flex; flex-direction: column; padding-bottom: 4px; }
   .stack-card { position: relative; margin-bottom: -112%; transition: transform .1s; }
