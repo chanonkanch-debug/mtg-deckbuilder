@@ -6,13 +6,12 @@ import { loadStore, newDeck, saveStore, STORE_KEY, usePrefs, type Store } from '
 import DeckBar from './components/DeckBar';
 import SearchPanel, { type SearchRequest } from './components/SearchPanel';
 import DeckPanel from './components/DeckPanel';
-import { CardModal, CardPreview, type PreviewState } from './components/CardView';
+import { CardModal, CardPreview, hidePreview as hidePreviewNow, showPreview as showPreviewAt } from './components/CardView';
 import type { Trial } from './lib/swap';
 
 export default function App() {
   const [store, setStore] = useState<Store>(loadStore);
   const [prefs, setPrefs] = usePrefs();
-  const [preview, setPreview] = useState<PreviewState | null>(null);
   const [modalCard, setModalCard] = useState<Card | null>(null);
   const [toastMsg, setToastMsg] = useState('');
   const [trial, setTrial] = useState<Trial | null>(null);
@@ -81,11 +80,9 @@ export default function App() {
     });
   }, [updateDeck]);
 
-  const showPreview = useCallback((e: React.MouseEvent, src: string | null) => {
-    setPreview(src ? { src, x: e.clientX, y: e.clientY } : null);
-  }, []);
-  const hidePreview = useCallback(() => setPreview(null), []);
-  const openCard = useCallback((card: Card) => { setPreview(null); setModalCard(card); }, []);
+  const showPreview = useCallback((e: React.MouseEvent, src: string | null) => showPreviewAt(src, e.clientX, e.clientY), []);
+  const hidePreview = useCallback(() => hidePreviewNow(), []);
+  const openCard = useCallback((card: Card) => { hidePreviewNow(); setModalCard(card); }, []);
   const tryAdd = useCallback((card: Card) => setTrial(t => ({ ...t, add: card })), []);
   const tryCut = useCallback((card: Card) => setTrial(t => ({ ...t, cut: card })), []);
   // A swap being tried belongs to the deck it was started on.
@@ -145,7 +142,7 @@ export default function App() {
         Coast. Decks are saved in this browser. Search results are cached for 24 hours.{' '}
         <button type="button" className="small" onClick={() => { clearCache(); toast('Cache cleared.'); }}>Clear cache</button>
       </footer>
-      <CardPreview preview={preview} />
+      <CardPreview />
       {modalCard && (
         <CardModal
           card={modalCard} format={deck.format} onClose={() => setModalCard(null)}
