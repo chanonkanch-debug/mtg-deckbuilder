@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { autocomplete, fetchNamed, type Card } from '../lib/scryfall';
 import { entriesOf, type Deck } from '../lib/rules';
 import { customHook, MAX_HOOKS, type Hook } from '../lib/buildAround';
-import { hasWebGPU, MODEL_SIZE, readCards, type AiRead } from '../ai/readCards';
+import { readCards, type AiRead } from '../ai/readCards';
+import { loadAiSettings, PROVIDERS, providerById, saveAiSettings } from '../ai/providers';
 
 interface Props {
   deck: Deck;
@@ -30,7 +31,12 @@ export default function BuildAround({ deck, seeds, setSeeds, hooks, off, onToggl
   const [names, setNames] = useState<string[]>([]);
   const [phrase, setPhrase] = useState('');
   const [status, setStatus] = useState('');
-  const [aiStatus, setAiStatus] = useState<{ text: string; progress: number; busy: boolean } | null>(null);
+  const [aiStatus, setAiStatus] = useState<{ text: string; busy: boolean } | null>(null);
+  const [aiSettings, setAiSettings] = useState(loadAiSettings);
+  const [keyInput, setKeyInput] = useState('');
+  const [editingKey, setEditingKey] = useState(false);
+  const provider = providerById(aiSettings.provider);
+  const apiKey = aiSettings.keys[provider.id] || '';
 
   useEffect(() => {
     const v = name.trim();
@@ -56,14 +62,24 @@ export default function BuildAround({ deck, seeds, setSeeds, hooks, off, onToggl
   }
 
   async function readWithAi() {
-    setAiStatus({ text: 'Starting the AI…', progress: 0, busy: true });
+    setAiStatus({ text: `Reading the cards with ${provider.label.split(' ')[0]}…`, busy: true });
     try {
-      const read = await readCards(seeds, deck.format, (text, progress) => setAiStatus({ text, progress, busy: true }));
-      onAiRead(read);
+      onAiRead(await readCards(seeds, deck.format, provider, apiKey));
       setAiStatus(null);
     } catch (err) {
-      setAiStatus({ text: `The AI read failed: ${err instanceof Error ? err.message : String(err)}`, progress: 0, busy: false });
+      setAiStatus({ text: `The AI read failed: ${err instanceof Error ? err.message : String(err)}`, busy: false });
     }
+  }
+
+  function saveKey(e: React.FormEvent) {
+    e.preventDefault();
+    const next = { ...aiSettings, keys: { ...aiSettings.keys, [provider.id]: keyInput.trim() } };
+    if (!keyInput.trim()) delete next.keys[provider.id];
+    saveAiSettings(next);
+    setAiSettings(next);
+    setKeyInput('');
+    setEditingKey(false);
+    setAiStatus(null);
   }
 
   const cmdr = entriesOf(deck).find(e => e.cmdr)?.card;
@@ -104,17 +120,26 @@ export default function BuildAround({ deck, seeds, setSeeds, hooks, off, onToggl
                 <p style={{ margin: '0 0 6px' }}><strong>AI read:</strong> {aiRead.summary}</p>
                 <button type="button" onClick={() => onAiRead(null)}>Use the quick read instead</button>
               </>
-            ) : !hasWebGPU() ? (
-              <p className="muted" style={{ margin: 0 }}>The AI read runs on your graphics card and needs a browser with WebGPU, such as Chrome or Edge on a computer.</p>
+            ) : !apiKey || editingKey ? (
+              <form className="row" onSubmit={saveKey}>
+                {PROVIDERS.length > 1 && (
+                  <select value={provider.id} title="AI service" onChange={e => { const next = { ...aiSettings, provider: e.target.value }; saveAiSettings(next); setAiSettings(next); }}>
+                    {PROVIDERS.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
+                  </select>
+                )}
+                <input type="password" value={keyInput} onChange={e => setKeyInput(e.target.value)} placeholder={`${provider.label} API key, ${provider.keyHint}`} autoComplete="off" />
+                <button type="submit">{apiKey && !keyInput.trim() ? 'Remove key' : 'Save key'}</button>
+                {editingKey && <button type="button" onClick={() => { setEditingKey(false); setKeyInput(''); }}>Cancel</button>}
+                <p className="muted" style={{ margin: '4px 0 0', flexBasis: '100%' }}>
+                  For a smarter read, add your own <a href={provider.keyUrl} target="_blank" rel="noreferrer">API key</a>. It's kept only in this browser and sent only to {provider.label.replace(/.*\((.*)\)/, '$1')}. Each read costs a few cents on your account.
+                </p>
+              </form>
             ) : aiStatus?.busy ? (
-              <>
-                <p className="muted" style={{ margin: '0 0 4px' }}>{aiStatus.text}</p>
-                {aiStatus.progress > 0 && aiStatus.progress < 1 && <progress value={aiStatus.progress} max={1} />}
-              </>
+              <p className="muted" style={{ margin: 0 }}>{aiStatus.text}</p>
             ) : (
               <>
                 <button type="button" onClick={readWithAi}>Read with AI</button>{' '}
-                <span className="muted">Runs in your browser, free. The first time downloads the model ({MODEL_SIZE}).</span>
+                <button type="button" className="linkish muted" onClick={() => setEditingKey(true)}>Change key</button>
                 {aiStatus && <p className="muted" style={{ margin: '4px 0 0' }}>{aiStatus.text}</p>}
               </>
             )}
