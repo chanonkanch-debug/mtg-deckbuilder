@@ -12,6 +12,10 @@ A Magic: The Gathering deck builder that runs entirely in the browser, using the
 - Regular art by default, with an option to show alternate arts and a printing picker per card
 - 20 results per page, adjustable card size, hover-to-enlarge, and a card view on right-click
 - **Try** on any result to preview a swap before making it
+- **Build around:** pick the cards you want to play and the search shows cards that work with them. A quick read
+  matches patterns in their rules text; **Read with AI** runs a small model (Qwen3 4B, via WebLLM) in your browser
+  to work out subtler synergies. It's free and private, needs WebGPU (Chrome or Edge on a computer), and downloads
+  about 2 GB the first time
 
 **Deck**
 
@@ -43,7 +47,7 @@ Requests to Scryfall are spaced 100 ms apart as Scryfall asks, and GET responses
 1. Backend for accounts, so decks are saved per account and sync across devices
 2. Decks shared by link
 3. A collection tab to track the cards you own (needs its own design pass)
-4. A local AI assistant for deck building
+4. A local AI assistant for deck building (started: the AI read in Build around)
 
 **Phase 3 and beyond:** features other deck builders such as Moxfield don't offer.
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { autocomplete, fetchNamed, type Card } from '../lib/scryfall';
 import { entriesOf, type Deck } from '../lib/rules';
 import { customHook, MAX_HOOKS, type Hook } from '../lib/buildAround';
+import { hasWebGPU, MODEL_SIZE, readCards, type AiRead } from '../ai/readCards';
 
 interface Props {
   deck: Deck;
@@ -16,16 +17,20 @@ interface Props {
   hoverZoom: boolean;
   onPreview: (e: React.MouseEvent, src: string | null) => void;
   onHidePreview: () => void;
+  /** The AI read of the current cards, if there is one; null goes back to the quick read. */
+  aiRead: AiRead | null;
+  onAiRead: (read: AiRead | null) => void;
 }
 
-const KIND_LABEL: Record<Hook['kind'], string> = { fuel: 'Turns a drawback into fuel', theme: 'Theme', keyword: 'Keyword', mechanic: 'Mechanic', tribe: 'Tribe', custom: 'Your phrase' };
+const KIND_LABEL: Record<Hook['kind'], string> = { ai: 'AI read', fuel: 'Turns a drawback into fuel', theme: 'Theme', keyword: 'Keyword', mechanic: 'Mechanic', tribe: 'Tribe', custom: 'Your phrase' };
 
 /** Pick cards to build around; what they care about is added to the card search below, with the other filters. */
-export default function BuildAround({ deck, seeds, setSeeds, hooks, off, onToggleHook, onAddHook, colorsNote, hoverZoom, onPreview, onHidePreview }: Props) {
+export default function BuildAround({ deck, seeds, setSeeds, hooks, off, onToggleHook, onAddHook, colorsNote, hoverZoom, onPreview, onHidePreview, aiRead, onAiRead }: Props) {
   const [name, setName] = useState('');
   const [names, setNames] = useState<string[]>([]);
   const [phrase, setPhrase] = useState('');
   const [status, setStatus] = useState('');
+  const [aiStatus, setAiStatus] = useState<{ text: string; progress: number; busy: boolean } | null>(null);
 
   useEffect(() => {
     const v = name.trim();
@@ -47,6 +52,17 @@ export default function BuildAround({ deck, seeds, setSeeds, hooks, off, onToggl
       setStatus('');
     } catch {
       setStatus(`Couldn't find a card named "${v}".`);
+    }
+  }
+
+  async function readWithAi() {
+    setAiStatus({ text: 'Starting the AI…', progress: 0, busy: true });
+    try {
+      const read = await readCards(seeds, deck.format, (text, progress) => setAiStatus({ text, progress, busy: true }));
+      onAiRead(read);
+      setAiStatus(null);
+    } catch (err) {
+      setAiStatus({ text: `The AI read failed: ${err instanceof Error ? err.message : String(err)}`, progress: 0, busy: false });
     }
   }
 
@@ -82,10 +98,31 @@ export default function BuildAround({ deck, seeds, setSeeds, hooks, off, onToggl
       {seeds.length > 0 && (
         <div className="fgroup">
           <div className="flabel">What they care about</div>
+          <div className="ai-read small">
+            {aiRead ? (
+              <>
+                <p style={{ margin: '0 0 6px' }}><strong>AI read:</strong> {aiRead.summary}</p>
+                <button type="button" onClick={() => onAiRead(null)}>Use the quick read instead</button>
+              </>
+            ) : !hasWebGPU() ? (
+              <p className="muted" style={{ margin: 0 }}>The AI read runs on your graphics card and needs a browser with WebGPU, such as Chrome or Edge on a computer.</p>
+            ) : aiStatus?.busy ? (
+              <>
+                <p className="muted" style={{ margin: '0 0 4px' }}>{aiStatus.text}</p>
+                {aiStatus.progress > 0 && aiStatus.progress < 1 && <progress value={aiStatus.progress} max={1} />}
+              </>
+            ) : (
+              <>
+                <button type="button" onClick={readWithAi}>Read with AI</button>{' '}
+                <span className="muted">Runs in your browser, free. The first time downloads the model ({MODEL_SIZE}).</span>
+                {aiStatus && <p className="muted" style={{ margin: '4px 0 0' }}>{aiStatus.text}</p>}
+              </>
+            )}
+          </div>
           <div className="chips">
             {hooks.map(h => (
               <button type="button" key={h.id} aria-pressed={!off.has(h.id)}
-                title={`${KIND_LABEL[h.kind]}${h.seeds.length ? ` · from ${h.seeds.join(', ')}` : ''}\n${h.query}`}
+                title={`${KIND_LABEL[h.kind]}${h.seeds.length ? ` · from ${h.seeds.join(', ')}` : ''}${h.why ? `\n${h.why}` : ''}\n${h.query}`}
                 onClick={() => onToggleHook(h.id)}>
                 {h.label}{h.seeds.length > 1 ? ` ×${h.seeds.length}` : ''}
               </button>

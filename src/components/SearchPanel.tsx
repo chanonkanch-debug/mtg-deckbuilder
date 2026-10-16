@@ -12,6 +12,7 @@ import { ARCHETYPES } from '../lib/archetypes';
 import SetPicker from './SetPicker';
 import BuildAround from './BuildAround';
 import { buildAroundQuery, hooksForSeeds, identityFor, type Hook } from '../lib/buildAround';
+import { seedKey, type AiRead } from '../ai/readCards';
 
 // Results show PAGE_SIZE cards at a time. Scryfall returns up to 175 per request,
 // so the next Scryfall page is only fetched when paging past what is already loaded.
@@ -61,6 +62,7 @@ export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, o
   const [openPanel, setOpenPanel] = useState<PanelKey | null>(null);
   const [hooksOff, setHooksOff] = useState<Set<string>>(new Set());
   const [customHooks, setCustomHooks] = useState<Hook[]>([]);
+  const [aiRead, setAiRead] = useState<AiRead | null>(null);
 
   const [results, setResults] = useState<Card[]>([]);
   const [nextPage, setNextPage] = useState<string | null>(null);
@@ -76,7 +78,10 @@ export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, o
 
   // Build around adds one clause to the search: cards matching any of the seeds' turned-on hooks. The seeds'
   // colors limit it unless the commander's colors already do.
-  const hooks = useMemo(() => seeds.length ? [...hooksForSeeds(seeds), ...customHooks] : [], [seeds, customHooks]);
+  // An AI read of these exact cards replaces the quick pattern read.
+  const aiFits = !!aiRead && aiRead.seeds === seedKey(seeds);
+  const hooks = useMemo(() => !seeds.length ? [] : [...(aiFits ? aiRead!.hooks : hooksForSeeds(seeds)), ...customHooks],
+    [seeds, customHooks, aiFits, aiRead]);
   const cmdrLimits = deck.format === 'commander' && onlyIdentity && entriesOf(deck).some(e => e.cmdr);
   const buildClause = useMemo(() => buildAroundQuery(seeds, hooks.filter(h => !hooksOff.has(h.id)), cmdrLimits ? null : identityFor(seeds)),
     [seeds, hooks, hooksOff, cmdrLimits]);
@@ -224,6 +229,7 @@ export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, o
       </div>
       {openPanel === 'build' && (
         <BuildAround deck={deck} seeds={seeds} setSeeds={changeSeeds} hooks={hooks} off={hooksOff} colorsNote={colorsNote}
+          aiRead={aiFits ? aiRead : null} onAiRead={r => { delay.current = FILTER_DELAY_MS; setAiRead(r); }}
           onToggleHook={id => { delay.current = FILTER_DELAY_MS; setHooksOff(o => { const n = new Set(o); if (!n.delete(id)) n.add(id); return n; }); }}
           onAddHook={h => { delay.current = FILTER_DELAY_MS; setCustomHooks(c => (c.some(x => x.id === h.id) ? c : [...c, h])); setHooksOff(o => { const n = new Set(o); n.delete(h.id); return n; }); }}
           hoverZoom={prefs.hoverZoom} onPreview={onPreview} onHidePreview={onHidePreview} />
