@@ -113,29 +113,24 @@ export function customHook(phrase: string): Hook {
   return { id: `custom:${p.toLowerCase()}`, label: p, kind: 'custom', query: `o:"${p}"`, seeds: [] };
 }
 
-export interface Suggestion { card: Card; hooks: string[]; score: number; rank: number }
+/** Hooks beyond this many aren't added to the search, to keep the query a sensible length. */
+export const MAX_HOOKS = 10;
 
 /**
- * Ranks the cards each hook's search found. A card scores one point per hook it matches, counted once per seed
- * that shares the hook, so cards that tie several seeds together come first; ties go to the more popular card
- * (its best position in the EDHREC-ordered results). Seeds and cards already in the deck are left out.
+ * The search clause Build around adds to the card search: cards matching any turned-on hook, minus the seed
+ * cards themselves, in the seeds' colors (pass null when the commander's colors already limit the search).
  */
-export function rankSuggestions(results: { hook: Hook; cards: Card[] }[], exclude: Set<string>): Suggestion[] {
-  const byName = new Map<string, Suggestion>();
-  for (const { hook, cards } of results) {
-    cards.forEach((card, i) => {
-      if (exclude.has(card.name)) return;
-      const s = byName.get(card.name) || { card, hooks: [], score: 0, rank: Infinity };
-      if (!s.hooks.includes(hook.label)) { s.hooks.push(hook.label); s.score += Math.max(1, hook.seeds.length); }
-      s.rank = Math.min(s.rank, i);
-      byName.set(card.name, s);
-    });
-  }
-  return [...byName.values()].sort((a, b) => b.score - a.score || a.rank - b.rank);
+export function buildAroundQuery(seeds: Card[], hooks: Hook[], identity: string | null): string {
+  if (!hooks.length) return '';
+  const any = hooks.slice(0, MAX_HOOKS).map(h => h.query);
+  const parts = [any.length > 1 ? `(${any.join(' or ')})` : any[0]];
+  parts.push(...seeds.map(s => `-!"${s.name.replace(/"/g, '')}"`));
+  if (identity) parts.push(`id<=${identity}`);
+  return parts.join(' ');
 }
 
-/** Color identity the suggestions must fit: the commander's in Commander, otherwise all the seeds' colors together. */
-export function identityFor(seeds: Card[], commander: string[] | null): string {
-  const colors = commander ?? [...new Set(seeds.flatMap(s => s.color_identity))];
+/** The seeds' colors together, as a Scryfall color identity. */
+export function identityFor(seeds: Card[]): string {
+  const colors = [...new Set(seeds.flatMap(s => s.color_identity))];
   return ['W', 'U', 'B', 'R', 'G'].filter(c => colors.includes(c)).join('') || 'c';
 }

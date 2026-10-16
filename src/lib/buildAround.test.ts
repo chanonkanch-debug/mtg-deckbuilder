@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Card } from './scryfall';
-import { customHook, hooksFor, hooksForSeeds, identityFor, rankSuggestions } from './buildAround';
+import { buildAroundQuery, customHook, hooksFor, hooksForSeeds, identityFor } from './buildAround';
 
 const card = (name: string, type_line: string, oracle_text: string, keywords: string[] = [], color_identity: string[] = []) =>
   ({ id: name, name, type_line, oracle_text, keywords, color_identity, mana_cost: '', cmc: 1, colors: [] }) as unknown as Card;
@@ -35,14 +35,11 @@ describe('suggestions', () => {
     const hooks = hooksForSeeds([a, b]);
     expect(hooks[0]).toMatchObject({ id: 'theme:aristocrats', seeds: ['A', 'B'] });
   });
-  it('ranks cards that fit more hooks first, then by popularity, leaving out excluded cards', () => {
-    const h1 = { ...customHook('one'), seeds: ['A', 'B'] }, h2 = customHook('two');
-    const x = card('X', 'Creature', ''), y = card('Y', 'Creature', ''), z = card('Z', 'Creature', '');
-    const ranked = rankSuggestions([{ hook: h1, cards: [y, x, z] }, { hook: h2, cards: [x, y] }], new Set(['Z']));
-    expect(ranked.map(s => `${s.card.name}:${s.score}`)).toEqual(['Y:3', 'X:3']);
-  });
-  it('limits colors to the commander, or to the seeds together', () => {
-    expect(identityFor([card('A', '', '', [], ['R']), card('B', '', '', [], ['W'])], null)).toBe('WR');
-    expect(identityFor([], ['G', 'U'])).toBe('UG');
+  it('adds a search clause: any hook, not the seeds, in their colors', () => {
+    const a = card('Krenko, Mob Boss', '', '', [], ['R']), b = card('Blood Artist', '', '', [], ['B']);
+    expect(identityFor([a, b])).toBe('BR');
+    expect(buildAroundQuery([a, b], [customHook('one'), customHook('two')], 'BR')).toBe('(o:"one" or o:"two") -!"Krenko, Mob Boss" -!"Blood Artist" id<=BR');
+    expect(buildAroundQuery([a], [customHook('one')], null)).toBe('o:"one" -!"Krenko, Mob Boss"');
+    expect(buildAroundQuery([a], [], 'R')).toBe('');
   });
 });

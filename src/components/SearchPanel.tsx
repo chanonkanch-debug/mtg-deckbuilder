@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import ManaText from './ManaText';
 import { autocomplete, searchCards, searchUrl, type Card } from '../lib/scryfall';
-import { canBeCommander, type Board, type Deck } from '../lib/rules';
+import { canBeCommander, entriesOf, type Board, type Deck } from '../lib/rules';
 import { buildQuery } from '../lib/filters';
 import { colorCurveSort } from '../lib/analysis';
 import { ZOOM_LEVELS, type Prefs } from '../lib/storage';
@@ -11,6 +11,7 @@ import { FILTERS } from '../lib/filters';
 import { ARCHETYPES } from '../lib/archetypes';
 import SetPicker from './SetPicker';
 import BuildAround from './BuildAround';
+import { buildAroundQuery, hooksForSeeds, identityFor, type Hook } from '../lib/buildAround';
 
 // Results show PAGE_SIZE cards at a time. Scryfall returns up to 175 per request,
 // so the next Scryfall page is only fetched when paging past what is already loaded.
@@ -58,6 +59,8 @@ export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, o
   const [onlyIdentity, setOnlyIdentity] = useState(true);
   const [allArts, setAllArts] = useState(false);
   const [openPanel, setOpenPanel] = useState<PanelKey | null>(null);
+  const [hooksOff, setHooksOff] = useState<Set<string>>(new Set());
+  const [customHooks, setCustomHooks] = useState<Hook[]>([]);
 
   const [results, setResults] = useState<Card[]>([]);
   const [nextPage, setNextPage] = useState<string | null>(null);
@@ -71,10 +74,18 @@ export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, o
   const shownSeq = useRef(0); // the search the current results and nextPage belong to
   const panelRef = useRef<HTMLElement>(null);
 
-  // The search is empty until the user types something or picks a filter or set.
-  const hasQuery = !!submitted.trim() || filters.size > 0 || sets.size > 0;
-  const query = useMemo(() => hasQuery ? buildQuery(deck, { text: submitted, filters, sets, onlyLegal, onlyIdentity, allArts }) : '',
-    [hasQuery, deck, submitted, filters, sets, onlyLegal, onlyIdentity, allArts]);
+  // Build around adds one clause to the search: cards matching any of the seeds' turned-on hooks. The seeds'
+  // colors limit it unless the commander's colors already do.
+  const hooks = useMemo(() => seeds.length ? [...hooksForSeeds(seeds), ...customHooks] : [], [seeds, customHooks]);
+  const cmdrLimits = deck.format === 'commander' && onlyIdentity && entriesOf(deck).some(e => e.cmdr);
+  const buildClause = useMemo(() => buildAroundQuery(seeds, hooks.filter(h => !hooksOff.has(h.id)), cmdrLimits ? null : identityFor(seeds)),
+    [seeds, hooks, hooksOff, cmdrLimits]);
+  const colorsNote = cmdrLimits ? "in your commander's colors" : `in ${seeds.length > 1 ? 'these cards\'' : 'this card\'s'} colors`;
+
+  // The search is empty until the user types something or picks a filter, set or card to build around.
+  const hasQuery = !!submitted.trim() || filters.size > 0 || sets.size > 0 || !!buildClause;
+  const query = useMemo(() => hasQuery ? [buildQuery(deck, { text: submitted, filters, sets, onlyLegal, onlyIdentity, allArts }), buildClause].filter(Boolean).join(' ') : '',
+    [hasQuery, deck, submitted, filters, sets, onlyLegal, onlyIdentity, allArts, buildClause]);
   const colorCurve = prefs.colorCurve;
   const url = query ? searchUrl({ q: query, order: prefs.order, dir: prefs.dir, allArts }) : null;
   const countIn = (groups: typeof FILTERS) => groups.reduce((n, g) => n + g.options.filter((_, i) => filters.has(`${g.key}:${i}`)).length, 0);
@@ -161,6 +172,7 @@ export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, o
     document.getElementById('results')?.scrollIntoView({ block: 'nearest' });
   }
 
+  const changeSeeds = (fn: (s: Card[]) => Card[]) => { delay.current = FILTER_DELAY_MS; setSeeds(fn); };
   const toggleFilter = (id: string) => {
     delay.current = FILTER_DELAY_MS;
     setFilters(f => { const n = new Set(f); n.has(id) ? n.delete(id) : n.add(id); return n; });
@@ -211,8 +223,10 @@ export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, o
         })}
       </div>
       {openPanel === 'build' && (
-        <BuildAround deck={deck} seeds={seeds} setSeeds={setSeeds} hoverZoom={prefs.hoverZoom}
-          onAdd={onAdd} onTry={onTry} onPreview={onPreview} onHidePreview={onHidePreview} onOpen={onOpen} />
+        <BuildAround deck={deck} seeds={seeds} setSeeds={changeSeeds} hooks={hooks} off={hooksOff} colorsNote={colorsNote}
+          onToggleHook={id => { delay.current = FILTER_DELAY_MS; setHooksOff(o => { const n = new Set(o); if (!n.delete(id)) n.add(id); return n; }); }}
+          onAddHook={h => { delay.current = FILTER_DELAY_MS; setCustomHooks(c => (c.some(x => x.id === h.id) ? c : [...c, h])); setHooksOff(o => { const n = new Set(o); n.delete(h.id); return n; }); }}
+          hoverZoom={prefs.hoverZoom} onPreview={onPreview} onHidePreview={onHidePreview} />
       )}
       {openPanel === 'guide' && <SyntaxGuide onTry={q => { setText(q); setSubmitted(q); }} />}
       {openPanel === 'filters' && <FilterChips title="Filters" groups={FILTERS} active={filters} onToggle={toggleFilter} onClear={clearGroups} />}
@@ -224,13 +238,18 @@ export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, o
       )}
       {openPanel === 'sets' && <SetPicker selected={sets} onToggle={toggleSet} onClear={() => setSets(new Set())} />}
 
-      {(filters.size > 0 || sets.size > 0) && (
+      {(filters.size > 0 || sets.size > 0 || seeds.length > 0) && (
         <div className="pills">
+          {seeds.length > 0 && (
+            <button type="button" className="pill" title="Stop building around these" onClick={() => changeSeeds(() => [])}>
+              Build around: {seeds.map(s => s.name).join(', ')} ✕
+            </button>
+          )}
           {[...FILTERS, ...ARCHETYPES].flatMap(g => g.options.map(([label], i) => [`${g.key}:${i}`, g.key === 'mv' ? `Mana value ${label}` : label] as const))
             .filter(([id]) => filters.has(id))
             .map(([id, label]) => <button type="button" key={id} className="pill" title="Remove" onClick={() => toggleFilter(id)}>{label} ✕</button>)}
           {[...sets].map(code => <button type="button" key={code} className="pill" title="Remove" onClick={() => toggleSet(code)}>Set: {code.toUpperCase()} ✕</button>)}
-          <button type="button" className="pill clear" onClick={() => { delay.current = FILTER_DELAY_MS; setFilters(new Set()); setSets(new Set()); }}>Clear all</button>
+          <button type="button" className="pill clear" onClick={() => { delay.current = FILTER_DELAY_MS; setFilters(new Set()); setSets(new Set()); setSeeds(() => []); }}>Clear all</button>
         </div>
       )}
 
