@@ -241,3 +241,8 @@
   .swap-table td:not(:first-child), .swap-table th:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; width: 22%; }
   .swap-table tr.better td:last-child { color: var(--ok); font-weight: 600; }
   .swap-table tr.worse td:last-child { color: var(--bad); font-weight: 600; }
+
+  /* Build around: seed cards, their hooks, and suggestions with what each one fits. */
+  .build input { flex: 1; min-width: 0; }
+  .build-results { margin-top: 10px; --card-w: 140px; }
+  .build-results .fits { color: var(--muted); font-size: 11px; line-height: 1.3; margin: 2px 0; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }

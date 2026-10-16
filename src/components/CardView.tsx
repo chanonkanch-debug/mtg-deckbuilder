@@ -45,9 +45,11 @@ interface ModalProps {
   /** Starts a swap preview adding this card, or cutting it when it's in the deck. */
   onTry?: (card: Card) => void;
   onTryCut?: (card: Card) => void;
+  /** Adds this card to Build around and opens it. */
+  onBuildAround?: (card: Card) => void;
 }
 
-export function CardModal({ card: original, format, onClose, onUseArt, onTry, onTryCut }: ModalProps) {
+export function CardModal({ card: original, format, onClose, onUseArt, onTry, onTryCut, onBuildAround }: ModalProps) {
   const [card, setCard] = useState(original); // the printing being shown
   const [arts, setArts] = useState<Card[] | null>(null);
   const [artsState, setArtsState] = useState<'idle' | 'loading' | 'error'>('idle');
@@ -83,10 +85,11 @@ export function CardModal({ card: original, format, onClose, onUseArt, onTry, on
           </p>
           <p className="small">Legal in {format}: <b>{legality}</b></p>
           {card.uri && <a href={card.uri} target="_blank" rel="noopener">Open on Scryfall</a>}
-          {(onTry || onTryCut) && (
-            <p>
+          {(onTry || onTryCut || onBuildAround) && (
+            <p className="row">
               {onTry && <button type="button" onClick={() => { onTry(original); onClose(); }}>Try in my deck</button>}
               {onTryCut && <button type="button" onClick={() => { onTryCut(original); onClose(); }}>Try cutting this</button>}
+              {onBuildAround && <button type="button" title="Find cards that work with this one" onClick={() => { onBuildAround(original); onClose(); }}>Build around this</button>}
             </p>
           )}
 

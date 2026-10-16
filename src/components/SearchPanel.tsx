@@ -10,6 +10,7 @@ import SyntaxGuide from './SyntaxGuide';
 import { FILTERS } from '../lib/filters';
 import { ARCHETYPES } from '../lib/archetypes';
 import SetPicker from './SetPicker';
+import BuildAround from './BuildAround';
 
 // Results show PAGE_SIZE cards at a time. Scryfall returns up to 175 per request,
 // so the next Scryfall page is only fetched when paging past what is already loaded.
@@ -25,10 +26,10 @@ const SORTS: [string, string][] = [
   ['released', 'release date'], ['rarity', 'rarity'], ['power', 'power'], ['toughness', 'toughness'],
 ];
 
-type PanelKey = 'filters' | 'archetypes' | 'sets' | 'guide';
-const TOOLBAR: [PanelKey, string][] = [['filters', 'Filters'], ['archetypes', 'Archetypes'], ['sets', 'Sets'], ['guide', 'Syntax help']];
+type PanelKey = 'filters' | 'archetypes' | 'sets' | 'build' | 'guide';
+const TOOLBAR: [PanelKey, string][] = [['filters', 'Filters'], ['archetypes', 'Archetypes'], ['sets', 'Sets'], ['build', 'Build around'], ['guide', 'Syntax help']];
 
-export interface SearchRequest { archetype?: string; query?: string }
+export interface SearchRequest { archetype?: string; query?: string; build?: boolean }
 
 interface Props {
   deck: Deck;
@@ -42,9 +43,12 @@ interface Props {
   onTry: (card: Card) => void;
   /** A search started elsewhere (the deck checkup): one Archetypes quick filter or a query. n changes on every request. */
   request?: SearchRequest & { n: number };
+  /** Cards picked to build around (also set from the card view). */
+  seeds: Card[];
+  setSeeds: (fn: (s: Card[]) => Card[]) => void;
 }
 
-export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, onHidePreview, onOpen, onTry, request }: Props) {
+export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, onHidePreview, onOpen, onTry, request, seeds, setSeeds }: Props) {
   const [text, setText] = useState('');
   const [submitted, setSubmitted] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -114,6 +118,7 @@ export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, o
 
   useEffect(() => {
     if (!request) return;
+    if (request.build) { setOpenPanel('build'); panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
     const group = ARCHETYPES.find(g => g.options.some(o => o[0] === request.archetype));
     if (!group && !request.query) return;
     setText(request.query ?? ''); setSubmitted(request.query ?? ''); setSets(new Set()); setOpenPanel(null);
@@ -196,7 +201,7 @@ export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, o
       {/* One toolbar; at most one panel open at a time keeps the search area compact. */}
       <div className="toolbar" role="tablist">
         {TOOLBAR.map(([key, label]) => {
-          const n = key === 'filters' ? countIn(FILTERS) : key === 'archetypes' ? countIn(ARCHETYPES) : key === 'sets' ? sets.size : 0;
+          const n = key === 'filters' ? countIn(FILTERS) : key === 'archetypes' ? countIn(ARCHETYPES) : key === 'sets' ? sets.size : key === 'build' ? seeds.length : 0;
           return (
             <button type="button" key={key} role="tab" aria-selected={openPanel === key} className={openPanel === key ? 'open' : ''}
               onClick={() => setOpenPanel(p => (p === key ? null : key))}>
@@ -205,6 +210,10 @@ export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, o
           );
         })}
       </div>
+      {openPanel === 'build' && (
+        <BuildAround deck={deck} seeds={seeds} setSeeds={setSeeds} hoverZoom={prefs.hoverZoom}
+          onAdd={onAdd} onTry={onTry} onPreview={onPreview} onHidePreview={onHidePreview} onOpen={onOpen} />
+      )}
       {openPanel === 'guide' && <SyntaxGuide onTry={q => { setText(q); setSubmitted(q); }} />}
       {openPanel === 'filters' && <FilterChips title="Filters" groups={FILTERS} active={filters} onToggle={toggleFilter} onClear={clearGroups} />}
       {openPanel === 'archetypes' && (

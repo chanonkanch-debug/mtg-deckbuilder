@@ -32,6 +32,8 @@ export interface Card {
   /** Collector number, layout and whether this printing is on MTG Arena, for the Arena export. Missing on older saved decks. */
   cn?: string;
   layout?: string;
+  /** Keyword abilities and actions, like Cycling or Landfall. Missing on older saved decks. */
+  keywords?: string[];
   arena?: boolean;
   pt: string;
 }
@@ -186,6 +188,7 @@ export function slimCard(c: any): Card {
     set_name: c.set_name,
     rarity: c.rarity,
     cn: c.collector_number,
+    keywords: c.keywords,
     layout: c.layout,
     arena: c.games ? c.games.includes('arena') : undefined,
     pt: c.power != null ? `${c.power}/${c.toughness}` : c.loyalty ? `Loyalty ${c.loyalty}` : '',
@@ -232,6 +235,12 @@ export async function searchCards(url: string): Promise<{ page: SearchPage; cach
     cacheWrite(url, empty, true); // remember empty searches too
     return { page: empty, cached: false };
   }
+}
+
+/** One card by its exact name, with its regular printing. */
+export async function fetchNamed(name: string): Promise<Card> {
+  const { value } = await cachedGet(`/cards/named?${new URLSearchParams({ exact: name })}`, slimCard);
+  return value;
 }
 
 export async function autocomplete(text: string): Promise<string[]> {
