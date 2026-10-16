@@ -21,12 +21,16 @@ describe('hooksFor', () => {
   });
   it('picks up named counters, tokens and rare actions', () => {
     const c = card('Test', 'Artifact', 'Whenever you cast a noncreature spell, put an oil counter on Test. Create a Food token. The Ring tempts you.');
-    expect(ids(c)).toEqual(['act:the ring tempts you', 'counter:oil', 'theme:spells', 'theme:tokens', 'token:food']);
+    expect(ids(c)).toEqual(['act:the ring tempts you', 'counter:oil', 'theme:spells', 'token:food']);
   });
   it('turns a drawback into fuel: damage, recasting and a heavy color cost', () => {
     const av = { ...card('Anti-Venom, Horrifying Healer', 'Legendary Creature — Symbiote Hero',
       'When Anti-Venom enters, if he was cast, return target creature card from your graveyard to the battlefield.\nIf damage would be dealt to Anti-Venom, prevent that damage and put that many +1/+1 counters on him.'), mana_cost: '{W}{W}{W}{W}{W}' } as Card;
     expect(ids(av)).toEqual(['fuel:damage', 'fuel:devotion-white', 'fuel:recast', 'theme:counters', 'theme:graveyard']);
+  });
+  it('reads copy effects as wanting creatures worth copying, not a token deck', () => {
+    const mi = card('Multiversal Incursion', 'Sorcery', "For each nontoken creature you control, create a token that's a copy of that creature, except it isn't legendary.");
+    expect(ids(mi)).toEqual(['fuel:copy', 'fuel:legends']);
   });
   it('finds wipes for indestructible cards, blink for enter triggers and sacrifice outlets for death triggers', () => {
     expect(ids(card('Wall', 'Creature — Wall', 'Indestructible', ['Indestructible']))).toContain('fuel:wipes');
