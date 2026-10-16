@@ -23,6 +23,17 @@ describe('hooksFor', () => {
     const c = card('Test', 'Artifact', 'Whenever you cast a noncreature spell, put an oil counter on Test. Create a Food token. The Ring tempts you.');
     expect(ids(c)).toEqual(['act:the ring tempts you', 'counter:oil', 'theme:spells', 'theme:tokens', 'token:food']);
   });
+  it('turns a drawback into fuel: damage, recasting and a heavy color cost', () => {
+    const av = { ...card('Anti-Venom, Horrifying Healer', 'Legendary Creature — Symbiote Hero',
+      'When Anti-Venom enters, if he was cast, return target creature card from your graveyard to the battlefield.\nIf damage would be dealt to Anti-Venom, prevent that damage and put that many +1/+1 counters on him.'), mana_cost: '{W}{W}{W}{W}{W}' } as Card;
+    expect(ids(av)).toEqual(['fuel:damage', 'fuel:devotion-white', 'fuel:recast', 'theme:counters', 'theme:graveyard']);
+  });
+  it('finds wipes for indestructible cards, blink for enter triggers and sacrifice outlets for death triggers', () => {
+    expect(ids(card('Wall', 'Creature — Wall', 'Indestructible', ['Indestructible']))).toContain('fuel:wipes');
+    expect(ids(card('Mulldrifter', 'Creature — Elemental', 'When Mulldrifter enters, draw two cards.'))).toContain('fuel:blink');
+    expect(ids(card('Spitebellows', 'Creature — Elemental', 'When this creature leaves the battlefield, it deals 6 damage.'))).not.toContain('fuel:blink');
+    expect(ids(card('Doomed Traveler', 'Creature — Human Soldier', 'When Doomed Traveler dies, create a 1/1 white Spirit creature token with flying.'))).toContain('fuel:dies');
+  });
   it('mirrors an unfamiliar "whenever you" verb', () => {
     expect(ids(card('Odd', 'Enchantment', 'Whenever you transmute a card, draw a card.'))).toContain('act:transmute');
   });

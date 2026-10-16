@@ -18,7 +18,7 @@ interface Props {
   onHidePreview: () => void;
 }
 
-const KIND_LABEL: Record<Hook['kind'], string> = { theme: 'Theme', keyword: 'Keyword', mechanic: 'Mechanic', tribe: 'Tribe', custom: 'Your phrase' };
+const KIND_LABEL: Record<Hook['kind'], string> = { fuel: 'Turns a drawback into fuel', theme: 'Theme', keyword: 'Keyword', mechanic: 'Mechanic', tribe: 'Tribe', custom: 'Your phrase' };
 
 /** Pick cards to build around; what they care about is added to the card search below, with the other filters. */
 export default function BuildAround({ deck, seeds, setSeeds, hooks, off, onToggleHook, onAddHook, colorsNote, hoverZoom, onPreview, onHidePreview }: Props) {

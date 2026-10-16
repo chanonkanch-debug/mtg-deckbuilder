@@ -5,8 +5,10 @@ import { ARCHETYPES } from './archetypes';
 // each hook into a Scryfall search for the cards that feed it or pay it off. Three layers, so niche mechanics
 // are covered without a hand-written rule for each: common themes, the card's own keywords and named
 // tokens/counters, and "whenever you <verb>" triggers mirrored into a search for cards that do <verb>.
+// A fourth layer turns a drawback into fuel: a card that profits from something normally bad for it (damage,
+// a wipe, dying, being recast) gets a search for the cards that cause it.
 
-export type HookKind = 'theme' | 'keyword' | 'mechanic' | 'tribe' | 'custom';
+export type HookKind = 'fuel' | 'theme' | 'keyword' | 'mechanic' | 'tribe' | 'custom';
 export interface Hook { id: string; label: string; kind: HookKind; query: string; seeds: string[] }
 
 const archetype = (label: string) => ARCHETYPES.flatMap(g => g.options).find(o => o[0] === label)![1];
@@ -26,6 +28,27 @@ const THEMES: { id: string; label: string; detect: RegExp; query: string }[] = [
   { id: 'discard', label: 'Discard', detect: /\bdiscards?\b|\bmadness\b/, query: '(o:"discard a card" or kw:madness or o:"whenever you discard")' },
   { id: 'equipment', label: 'Equipment and Auras', detect: /equipped creature|enchanted creature|\bequipment\b|\baura spell/, query: archetype('Voltron') },
 ];
+
+// What the card profits from, and the cards that cause it. `detect` runs on the rules text with the card's
+// own name replaced by "this".
+const FUEL: { id: string; label: string; detect: RegExp; query: string }[] = [
+  { id: 'damage', label: 'Damage it on purpose',
+    detect: /damage would be dealt to (this|him|her|it)\b[^.]*(prevent|instead|counters?)|whenever (this|equipped creature|enchanted creature) is dealt damage|prevent all damage that would be dealt to (this|him|her|it)\b/,
+    query: '(o:"damage to each creature" or o:"damage to each other creature" or o:/deals \\d+ damage to target creature you control/ or o:fight or o:/dealt to you[^.]* is dealt to/)' },
+  { id: 'wipes', label: 'Wipes it survives',
+    detect: /\bindestructible\b/,
+    query: '(o:"destroy all creatures" or o:"destroy all other creatures" or o:"destroy all nonland permanents" or o:"destroy all permanents")' },
+  { id: 'recast', label: 'Recast it',
+    detect: /if (this|it|he|she|they) (was|were) cast|when you cast this/,
+    query: '(o:"you control to its owner\'s hand" or o:"you control to their owner\'s hand" or o:"return target creature you control to")' },
+  { id: 'blink', label: 'Blink it',
+    detect: /when (this|it) enters(?![^.]*if (this|it|he|she|they) (was|were) cast)/,
+    query: archetype('Blink') },
+  { id: 'dies', label: 'Sacrifice it',
+    detect: /when (this|it) dies|when (this|it) is put into a graveyard from the battlefield/,
+    query: '(o:"sacrifice a creature:" or o:"sacrifice another creature:" or o:"sacrifice a creature," or o:"sacrifice a permanent:")' },
+];
+const COLOR_WORD: Record<string, string> = { W: 'white', U: 'blue', B: 'black', R: 'red', G: 'green' };
 
 // Keywords too common to say anything about a deck, or already covered by a theme above.
 const SKIP_KEYWORDS = new Set(['flying', 'trample', 'haste', 'vigilance', 'reach', 'deathtouch', 'first strike', 'double strike',
@@ -50,12 +73,20 @@ const title = (s: string) => s.replace(/\b\w/g, c => c.toUpperCase());
 /** The hooks one card offers: what it cares about, as searches for cards that work with it. */
 export function hooksFor(card: Card): Hook[] {
   const raw = card.oracle_text.replace(/\([^)]*\)/g, ''); // reminder text explains, it doesn't define the card
-  const text = raw.toLowerCase().replace(new RegExp(card.name.split(' // ')[0].replace(/[.*+?^${}()|[\]\\]/g, '\\$&').toLowerCase(), 'g'), 'this');
+  // A legendary card often calls itself by its short name ("Anti-Venom" for "Anti-Venom, Horrifying Healer").
+  const front = card.name.split(' // ')[0];
+  const esc = (n: string) => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').toLowerCase();
+  const text = raw.toLowerCase().replace(new RegExp(`${esc(front)}|${esc(front.split(',')[0])}`, 'g'), 'this');
   const hooks = new Map<string, Hook>();
   const add = (id: string, label: string, kind: HookKind, query: string) => {
     if (!hooks.has(id)) hooks.set(id, { id, label, kind, query, seeds: [card.name] });
   };
 
+  for (const f of FUEL) if (f.detect.test(text)) add(`fuel:${f.id}`, f.label, 'fuel', f.query);
+  // A heavy single-color cost ({W}{W}{W}{W}{W}) is a devotion payoff waiting to happen.
+  for (const [c, word] of Object.entries(COLOR_WORD)) {
+    if ((card.mana_cost?.match(new RegExp(`\\{${c}\\}`, 'g')) || []).length >= 3) add(`fuel:devotion-${word}`, `Devotion to ${word}`, 'fuel', `o:"devotion to ${word}"`);
+  }
   for (const t of THEMES) if (t.detect.test(text)) add(`theme:${t.id}`, t.label, 'theme', t.query);
 
   for (const k of card.keywords || []) {
