@@ -14,7 +14,7 @@ export interface Hook { id: string; label: string; kind: HookKind; query: string
 const archetype = (label: string) => ARCHETYPES.flatMap(g => g.options).find(o => o[0] === label)![1];
 
 const THEMES: { id: string; label: string; detect: RegExp; query: string }[] = [
-  { id: 'tokens', label: 'Tokens', detect: /\bcreates? [^.]*\btokens?\b|tokens? you control|whenever (a|another|one or more) (creature|token)s?[^.]* enters/, query: archetype('Tokens / go wide') },
+  { id: 'tokens', label: 'Tokens', detect: /\bcreates? [^.]*\bcreature tokens?\b|tokens? you control|whenever (a|another|one or more) (creature|token)s?[^.]* enters/, query: archetype('Tokens / go wide') },
   { id: 'aristocrats', label: 'Sacrifice and dies', detect: /sacrifice (a|another) creature|creatures? (you control )?dies|whenever [^.]* dies/, query: archetype('Aristocrats') },
   { id: 'counters', label: '+1/+1 counters', detect: /\+1\/\+1 counter|proliferate/, query: '(o:"+1/+1 counter" or o:proliferate)' },
   { id: 'lifegain', label: 'Lifegain', detect: /\bgains? (\d+|x|that much) life|whenever you gain life|\blifelink\b/, query: archetype('Lifegain') },
@@ -48,6 +48,15 @@ const FUEL: { id: string; label: string; detect: RegExp; query: string }[] = [
     detect: /when (this|it) dies|when (this|it) is put into a graveyard from the battlefield/,
     query: '(o:"sacrifice a creature:" or o:"sacrifice another creature:" or o:"sacrifice a creature," or o:"sacrifice a permanent:")' },
 ];
+// Copy effects want creatures worth copying, not a go-wide token deck.
+FUEL.push(
+  { id: 'copy', label: 'Creatures worth copying',
+    detect: /tokens? that's a copy of|tokens that are copies of|becomes? a copy of|copy of (target|each|another|a|that) [^.]*creature/,
+    query: '(t:creature (o:"when ~ enters" or o:"whenever ~ enters" or o:"when this creature enters" or o:"whenever this creature enters"))' },
+  { id: 'legends', label: 'Legendary creatures',
+    detect: /(isn't|aren't) legendary|legend rule doesn't apply/,
+    query: '(t:legendary t:creature)' },
+);
 const COLOR_WORD: Record<string, string> = { W: 'white', U: 'blue', B: 'black', R: 'red', G: 'green' };
 
 // Keywords too common to say anything about a deck, or already covered by a theme above.
