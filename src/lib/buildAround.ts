@@ -8,8 +8,8 @@ import { ARCHETYPES } from './archetypes';
 // A fourth layer turns a drawback into fuel: a card that profits from something normally bad for it (damage,
 // a wipe, dying, being recast) gets a search for the cards that cause it.
 
-export type HookKind = 'fuel' | 'theme' | 'keyword' | 'mechanic' | 'tribe' | 'custom';
-export interface Hook { id: string; label: string; kind: HookKind; query: string; seeds: string[] }
+export type HookKind = 'ai' | 'fuel' | 'theme' | 'keyword' | 'mechanic' | 'tribe' | 'custom';
+export interface Hook { id: string; label: string; kind: HookKind; query: string; seeds: string[]; why?: string }
 
 const archetype = (label: string) => ARCHETYPES.flatMap(g => g.options).find(o => o[0] === label)![1];
 
