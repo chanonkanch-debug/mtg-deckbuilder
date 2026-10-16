@@ -1,18 +1,38 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import ManaText from './ManaText';
 import { fetchArts, type Card } from '../lib/scryfall';
 
-export interface PreviewState { src: string; x: number; y: number }
+// The hover preview lives in its own small store, so moving the mouse re-renders only the preview, not the app.
+interface PreviewState { src: string; x: number; y: number }
+let current: PreviewState | null = null;
+const listeners = new Set<() => void>();
+const subscribe = (fn: () => void) => { listeners.add(fn); return () => { listeners.delete(fn); }; };
+function setPreview(next: PreviewState | null) {
+  if (next === current || (next && current && next.src === current.src && next.x === current.x && next.y === current.y)) return;
+  current = next;
+  listeners.forEach(fn => fn());
+}
+export function showPreview(src: string | null, x: number, y: number) { setPreview(src ? { src, x, y } : null); }
+export function hidePreview() { setPreview(null); }
 
 const PREVIEW_W = 300, PREVIEW_H = 420;
 
-/** Large image that follows the cursor while hovering a card. */
-export function CardPreview({ preview }: { preview: PreviewState | null }) {
+/** Large image that follows the cursor while hovering a card. The smaller image the page already loaded shows at
+ *  once, and the sharp large image replaces it when it arrives, so a new card never waits behind the old one. */
+export function CardPreview() {
+  const preview = useSyncExternalStore(subscribe, () => current);
+  const [loaded, setLoaded] = useState<string | null>(null);
   if (!preview) return null;
   const { x, y, src } = preview;
   const left = Math.max(8, x + PREVIEW_W + 24 > innerWidth ? x - PREVIEW_W - 16 : x + 16);
   const top = Math.max(8, Math.min(y - PREVIEW_H / 2, innerHeight - PREVIEW_H - 8));
-  return <img id="preview" src={src} alt="" style={{ display: 'block', left, top }} />;
+  const quick = src.replace('/large/', '/normal/');
+  return (
+    <div id="preview" style={{ left, top }}>
+      {quick !== src && <img src={quick} alt="" />}
+      <img key={src} src={src} alt="" onLoad={() => setLoaded(src)} style={{ opacity: loaded === src || quick === src ? 1 : 0 }} />
+    </div>
+  );
 }
 
 /** Full card view opened by right-click (or long-press on touch). */
