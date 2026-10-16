@@ -15,6 +15,7 @@ export default function App() {
   const [modalCard, setModalCard] = useState<Card | null>(null);
   const [toastMsg, setToastMsg] = useState('');
   const [trial, setTrial] = useState<Trial | null>(null);
+  const [seeds, setSeeds] = useState<Card[]>([]);
   const [searchRequest, setSearchRequest] = useState<SearchRequest & { n: number }>();
   const toastTimer = useRef<number>(undefined);
 
@@ -120,6 +121,8 @@ export default function App() {
           onOpen={openCard}
           onTry={tryAdd}
           request={searchRequest}
+          seeds={seeds}
+          setSeeds={setSeeds}
         />
         <DeckPanel
           deck={deck}
@@ -148,6 +151,10 @@ export default function App() {
           card={modalCard} format={deck.format} onClose={() => setModalCard(null)}
           onTry={deck.cards[modalCard.id]?.main ? undefined : tryAdd}
           onTryCut={deck.cards[modalCard.id]?.main ? tryCut : undefined}
+          onBuildAround={card => {
+            setSeeds(s => (s.some(c => c.name === card.name) ? s : [...s, card]));
+            setSearchRequest(r => ({ build: true, n: (r?.n ?? 0) + 1 }));
+          }}
           onUseArt={deck.cards[modalCard.id] ? art => { swapArt(modalCard.id, art); toast(`Now using the ${art.set_name || 'selected'} art.`); } : undefined}
         />
       )}
