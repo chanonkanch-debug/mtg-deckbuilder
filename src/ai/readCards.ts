@@ -1,11 +1,10 @@
 import type { Card } from '../lib/scryfall';
 import type { Hook } from '../lib/buildAround';
 
-// Build around's AI read: a small model running in the browser (WebLLM, WebGPU) reads the picked cards and says
-// what they want. It answers with plain rules-text phrases, not search syntax, so its searches are always valid.
+import type { AiProvider } from './providers';
 
-export const MODEL_ID = 'Qwen3-4B-q4f16_1-MLC';
-export const MODEL_SIZE = 'about 2 GB';
+// Build around's AI read: an AI model reads the picked cards and says what they want. It answers with plain
+// rules-text phrases, not search syntax, so its searches are always valid.
 
 export interface AiRead { seeds: string; summary: string; hooks: Hook[] }
 
@@ -13,7 +12,7 @@ const SYSTEM = `You are an expert Magic: The Gathering deck builder. The user pi
 Read their rules text closely and work out what the deck wants: the cards that enable them, the cards they pay off,
 and any unusual or niche synergy a casual player would miss. Ignore anything the cards merely mention in passing.
 
-Answer only with JSON:
+Answer with JSON:
 {"summary": "<one or two plain sentences on what this deck wants to do>",
  "hooks": [{"label": "<2 to 4 words>", "why": "<one short sentence>", "phrases": ["<rules-text phrase>", ...]}]}
 
@@ -42,7 +41,7 @@ a copy of that creature, except it isn't legendary."
 const describe = (c: Card) => `${c.name} ${c.mana_cost} ${c.type_line}. "${c.oracle_text.replace(/\n/g, ' ')}"`;
 
 export function promptFor(seeds: Card[], format: string): string {
-  return `Format: ${format}.\n${seeds.length > 1 ? 'Cards' : 'Card'}:\n${seeds.map(describe).join('\n')}\n/no_think`;
+  return `Format: ${format}.\n${seeds.length > 1 ? 'Cards' : 'Card'}:\n${seeds.map(describe).join('\n')}`;
 }
 
 const clean = (p: string) => p.toLowerCase().replace(/["\\]/g, '').replace(/\s+/g, ' ').trim();
@@ -67,31 +66,27 @@ export function parseRead(text: string, seeds: Card[]): AiRead {
 
 export const seedKey = (seeds: Card[]) => seeds.map(s => s.name).sort().join('|');
 
-export const hasWebGPU = () => typeof navigator !== 'undefined' && 'gpu' in navigator;
+// The answer's shape, for providers that can enforce it.
+export const READ_SCHEMA = {
+  type: 'object',
+  properties: {
+    summary: { type: 'string' },
+    hooks: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: { label: { type: 'string' }, why: { type: 'string' }, phrases: { type: 'array', items: { type: 'string' } } },
+        required: ['label', 'why', 'phrases'],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ['summary', 'hooks'],
+  additionalProperties: false,
+};
 
-type Engine = Awaited<ReturnType<typeof import('@mlc-ai/web-llm').CreateWebWorkerMLCEngine>>;
-let engine: Promise<Engine> | null = null;
-
-/** Loads the model (downloading it the first time), then reads the cards. */
-export async function readCards(seeds: Card[], format: string, onProgress: (text: string, progress: number) => void): Promise<AiRead> {
-  if (!engine) {
-    const gpu = (navigator as Navigator & { gpu?: { requestAdapter(): Promise<unknown> } }).gpu;
-    if (!gpu || !(await gpu.requestAdapter().catch(() => null))) {
-      throw new Error("this browser can't use your graphics card. Try Chrome or Edge on a computer with hardware acceleration on.");
-    }
-    engine = import('@mlc-ai/web-llm').then(webllm => webllm.CreateWebWorkerMLCEngine(
-      new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' }), MODEL_ID,
-      { initProgressCallback: r => onProgress(r.text, r.progress) }));
-    engine.catch(() => { engine = null; });
-  }
-  const e = await engine;
-  onProgress('Reading the cards…', 1);
-  const reply = await e.chat.completions.create({
-    messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: promptFor(seeds, format) }],
-    temperature: 0.3,
-    max_tokens: 900,
-    response_format: { type: 'json_object' },
-    extra_body: { enable_thinking: false },
-  });
-  return parseRead(reply.choices[0]?.message?.content || '', seeds);
+/** Asks the chosen AI to read the cards. */
+export async function readCards(seeds: Card[], format: string, provider: AiProvider, apiKey: string): Promise<AiRead> {
+  const text = await provider.complete({ system: SYSTEM, prompt: promptFor(seeds, format), schema: READ_SCHEMA }, apiKey);
+  return parseRead(text, seeds);
 }

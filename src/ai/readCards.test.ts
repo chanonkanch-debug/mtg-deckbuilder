@@ -7,11 +7,10 @@ const card = (name: string, oracle_text: string) =>
 const mi = card('Multiversal Incursion', "For each nontoken creature you control, create a token that's a copy of that creature,\nexcept it isn't legendary.");
 
 describe('AI read', () => {
-  it('describes the cards on one line each, with thinking off', () => {
+  it('describes the cards on one line each', () => {
     const p = promptFor([mi], 'commander');
     expect(p).toContain('Format: commander.');
     expect(p).toContain("Multiversal Incursion {5}{U}{U} Sorcery. \"For each nontoken creature you control, create a token that's a copy of that creature, except it isn't legendary.\"");
-    expect(p.endsWith('/no_think')).toBe(true);
   });
   it('turns phrases into safe rules-text searches and drops bad ones', () => {
     const answer = 'Sure! {"summary": "Copy your board.", "hooks": [' +

@@ -245,4 +245,3 @@
   /* Build around: seed cards, their hooks, and suggestions with what each one fits. */
   .build input { flex: 1; min-width: 0; }
   .build .ai-read { margin: 0 0 8px; }
-  .build .ai-read progress { width: 100%; max-width: 320px; }
