@@ -1,0 +1,22 @@
+262860 index.html
+href="/decklist/standard-league-2026-10-2211129"
+href="/decklist/pioneer-league-2026-10-2211137"
+href="/decklist/premodern-league-2026-10-2211145"
+href="/decklist/pauper-league-2026-10-2211153"
+href="/decklist/modern-league-2026-10-2211161"
+grep: write error: Broken pipe
+327588 d.html
+window.MTGO =
+window.MTGO.decklists =
+window.MTGO.decklists.data =
+window.MTGO.decklists.roundNames =
+window.MTGO.decklists.type =
+<script language="JavaScript" type="text/javascript" src="https://www.mtgo.com/minify-js?locale=en_US&files=web-platform/component/browserErrors^web-platform/init^web-platform/helpers/misc^libs/jquery/jquery-3.7.1.min^libs/twitter/bootstrap-3.3.7.min^libs/utils/underscore-min^libs/jquery/plugins/xdr^core^web-platform/helpers/scroll-to^_components/youtube-modal&v=102319806"
+<script type="text/javascript" src="/web-platform/scripts/libs/tarteaucitron/1.24.0/tarteaucitron.js"
+<script language="JavaScript" type="text/javascript" src="https://www.mtgo.com/minify-js?locale=en_US&files=web-platform/helpers/buffer^web-platform/track/tracker^web-platform/track/data-layer^web-platform/track/cookie-consent^web-platform/track/web-events&v=2513844730"
+<script language="JavaScript" type="text/javascript" src="https://www.mtgo.com/minify-js?locale=en_US&files=_pages/decklist-item^imported/d3.v3.min^imported/wiz_bean_content_deck_list.charts^_components/deck^_components/get-started-modal&v=350458254"
+found
+['event_id', 'description', 'starttime', 'format', 'type', 'inplayoffs', 'url', 'site_name', 'decklists', 'brackets', 'standings', 'winloss', 'final_rank', 'player_count']
+32
+['loginid', 'tournamentid', 'decktournamentid', 'player', 'main_deck', 'sideboard_deck']
+[{"decktournamentid": "58699131", "docid": "64382", "ptc": "0", "qty": "4", "sideboard": "false", "card_attributes": {"digitalobjectcatalogid": "64382", "card_name": "Force of Will", "cost": "5", "rarity": "BONUS", "color": "BLUE", "cardset": "MS3", "card_type": "INSTNT", "colors": ["COLOR_BLUE"]}}]
