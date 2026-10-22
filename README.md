@@ -14,7 +14,7 @@ A Magic: The Gathering deck builder that runs entirely in the browser, using the
 - **Try** on any result to preview a swap before making it
 - **Build around:** pick the cards you want to play and the search shows the cards Commander decks on EDHREC
   play most often with them (leaving out staples). Google's Gemini (free tier) can also read them and work out
-  what they want. Needs a free Gemini key (see Development).
+  what they want; that part needs a free Gemini key (see Development).
   Other AI services can be added in `src/ai/providers.ts`
 
 **Deck**
