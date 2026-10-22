@@ -1,35 +1,21 @@
-Thu Oct 22 08:57:56 UTC 2026
-52 events since 2026-10-18
-skipped /decklist/legacy-league-2026-10-2011169: no decklist data on the page
-skipped /decklist/pioneer-challenge-32-2026-10-1912856619: no decklist data on the page
-fetched 25 events…
-skipped /decklist/standard-challenge-32-2026-10-1912856618: no decklist data on the page
-skipped /decklist/pauper-challenge-32-2026-10-1912856616: no decklist data on the page
-skipped /decklist/modern-challenge-64-2026-10-1912856886: no decklist data on the page
-skipped /decklist/modern-league-2026-10-2011161: no decklist data on the page
-skipped /decklist/pauper-league-2026-10-1911153: no decklist data on the page
-skipped /decklist/vintage-challenge-32-2026-10-1812856609: no decklist data on the page
-skipped /decklist/legacy-league-2026-10-1911169: no decklist data on the page
-skipped /decklist/pioneer-challenge-16-2026-10-1812856608: no decklist data on the page
-skipped /decklist/pauper-challenge-32-2026-10-1812856607: no decklist data on the page
-skipped /decklist/vintage-challenge-16-2026-10-1812856602: no decklist data on the page
-skipped /decklist/modern-challenge-32-2026-10-1812856599: no decklist data on the page
-skipped /decklist/modern-league-2026-10-1911161: no decklist data on the page
-fetched 38 new events, 14 failed
-standard: 135 decks from 8 events, 370 cards
-pioneer: 20 decks from 5 events, 195 cards
-modern: 248 decks from 8 events, 508 cards
-legacy: 176 decks from 7 events, 457 cards
-vintage: 26 decks from 5 events, 165 cards
-pauper: 71 decks from 5 events, 278 cards
-exit 0
-Thu Oct 22 09:01:27 UTC 2026
+/decklist/modern-league-2026-10-2011161 200 null 359088 612 ms idx 14255 "window.MTGO.decklists.data = {\"playeventid\":\"11161\",\"name\":\"Modern League\",\"publish_date\":\"2026-10-20\",\"instance_id\":\"11161_2026-10-20\",\"site_name\":\"m"
+  between: "80\",\"wins\":\"5\",\"losses\":\"0\"}}]};\n    window.MTGO.decklists.type = 'league';\n    "
+/decklist/modern-league-2026-10-2011161 200 null 359088 219 ms idx 14255 "window.MTGO.decklists.data = {\"playeventid\":\"11161\",\"name\":\"Modern League\",\"publish_date\":\"2026-10-20\",\"instance_id\":\"11161_2026-10-20\",\"site_name\":\"m"
+  between: "80\",\"wins\":\"5\",\"losses\":\"0\"}}]};\n    window.MTGO.decklists.type = 'league';\n    "
+/decklist/modern-challenge-32-2026-10-1812856599 200 null 347004 2320 ms idx 14255 "window.MTGO.decklists.data = {\"event_id\":\"12856599\",\"description\":\"Modern Challenge 32\",\"starttime\":\"2026-10-18 01:00:00.0\",\"format\":\"CMODERN\",\"type\":"
+  between: "63\",\"queued_players\":\"63\"}};\n    window.MTGO.decklists.type = 'tournament';\n    "
+/decklist/modern-challenge-32-2026-10-1812856599 200 null 347004 3429 ms idx 14255 "window.MTGO.decklists.data = {\"event_id\":\"12856599\",\"description\":\"Modern Challenge 32\",\"starttime\":\"2026-10-18 01:00:00.0\",\"format\":\"CMODERN\",\"type\":"
+  between: "63\",\"queued_players\":\"63\"}};\n    window.MTGO.decklists.type = 'tournament';\n    "
+/decklist/pauper-league-2026-10-1911153 200 null 32657 82 ms idx 14255 "window.MTGO.decklists.data = {\"playeventid\":\"11153\",\"name\":\"Pauper League\",\"publish_date\":\"2026-10-19\",\"instance_id\":\"11153_2026-10-19\",\"site_name\":\"p"
+  between: "pauper-league-2026-10-1911153\"};\n    window.MTGO.decklists.type = 'league';\n    "
+/decklist/pauper-league-2026-10-1911153 200 null 32657 78 ms idx 14255 "window.MTGO.decklists.data = {\"playeventid\":\"11153\",\"name\":\"Pauper League\",\"publish_date\":\"2026-10-19\",\"instance_id\":\"11153_2026-10-19\",\"site_name\":\"p"
+  between: "pauper-league-2026-10-1911153\"};\n    window.MTGO.decklists.type = 'league';\n    "
 total 112
-drwxr-xr-x 2 runner runner  4096 Oct 22 08:57 .
-drwxr-xr-x 3 runner runner  4096 Oct 22 08:57 ..
--rw-r--r-- 1 runner runner 21612 Oct 22 09:01 legacy.json
--rw-r--r-- 1 runner runner 29637 Oct 22 09:01 modern.json
--rw-r--r-- 1 runner runner  9443 Oct 22 09:01 pauper.json
--rw-r--r-- 1 runner runner  5202 Oct 22 09:01 pioneer.json
--rw-r--r-- 1 runner runner 16925 Oct 22 09:01 standard.json
--rw-r--r-- 1 runner runner  5629 Oct 22 09:01 vintage.json
+drwxr-xr-x 2 runner runner  4096 Oct 22 09:02 .
+drwxr-xr-x 3 runner runner  4096 Oct 22 09:02 ..
+-rw-r--r-- 1 runner runner 21612 Oct 22 09:02 legacy.json
+-rw-r--r-- 1 runner runner 29637 Oct 22 09:02 modern.json
+-rw-r--r-- 1 runner runner  9443 Oct 22 09:02 pauper.json
+-rw-r--r-- 1 runner runner  5202 Oct 22 09:02 pioneer.json
+-rw-r--r-- 1 runner runner 16925 Oct 22 09:02 standard.json
+-rw-r--r-- 1 runner runner  5629 Oct 22 09:02 vintage.json
