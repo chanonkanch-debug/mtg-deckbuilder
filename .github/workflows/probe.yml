@@ -19,3 +19,7 @@ jobs:
           done
           grep -o '<select[^>]*>' i.html | head; grep -o '<option[^>]*value="[^"]*"' i.html | head -40
           grep -o '<form[^>]*>' i.html | head
+      - run: |
+          git config user.name probe; git config user.email probe@example.com
+          git add probe.txt; git commit -m "probe output [skip ci]"; git push
+        if: always()
