@@ -9,17 +9,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
       - run: |
           exec > probe.txt 2>&1
-          UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Safari/537.36"
-          for u in https://www.mtgo.com/decklists https://www.mtgo.com/decklists/2026/09 "https://www.mtgo.com/decklists?year=2026&month=09" https://www.mtgo.com/decklists/2026/08; do
-            curl -sSL -A "$UA" "$u" -o i.html -w "$u %{http_code} %{url_effective}\n"
-            echo "links: $(grep -o 'href="/decklist/[^"]*"' i.html | sort -u | wc -l)  first: $(grep -o 'href="/decklist/[^"]*"' i.html | head -1)  last: $(grep -o 'href="/decklist/[^"]*"' i.html | tail -1)"
-            grep -o 'href="/decklist/[^"]*"' i.html | sed 's/.*decklist\///; s/-20[0-9][0-9]-.*//' | sort | uniq -c | sort -rn | head -30
-          done
-          grep -o '<select[^>]*>' i.html | head; grep -o '<option[^>]*value="[^"]*"' i.html | head -40
-          grep -o '<form[^>]*>' i.html | head
+          time node scripts/collect-decklists.mjs 14
+          ls -la public/decks
       - run: |
           git config user.name probe; git config user.email probe@example.com
-          git add probe.txt; git commit -m "probe output [skip ci]"; git push
+          git add -f probe.txt public/decks; git commit -m "probe output [skip ci]"; git push
         if: always()
