@@ -1,9 +1,10 @@
 // Collects recent MTGO tournament decklists from mtgo.com into public/decks/<format>.json, for Build around's
 // "played with" in 60-card formats (src/lib/decklists.ts). Runs in the deploy workflow; no dependencies.
 //
-//   node scripts/collect-decklists.mjs [days=60]
+//   node scripts/collect-decklists.mjs [days=30]
 //
 // Each event page is reduced to its main decks and kept in .decklist-cache/, so later runs only fetch new events.
+// mtgo.com can take 20 seconds or more per page, so a run stops fetching after BUDGET_MS and the next run carries on.
 
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 
@@ -11,17 +12,14 @@ const FORMATS = ['standard', 'pioneer', 'modern', 'legacy', 'vintage', 'pauper']
 const SITE = 'https://www.mtgo.com';
 const CACHE = '.decklist-cache';
 const OUT = 'public/decks';
-const DAYS = Number(process.argv[2]) || 60;
-const GAP_MS = 500; // between requests to mtgo.com
-const TIMEOUT_MS = 60_000; // mtgo.com sometimes takes 20 seconds or more to answer
+const DAYS = Number(process.argv[2]) || 30;
+const WORKERS = 4; // requests to mtgo.com at a time
+const TIMEOUT_MS = 60_000;
+const BUDGET_MS = 15 * 60_000;
 const UA = 'mtg-deckbuilder decklist collector (github.com/chanonkanch-debug/mtg-deckbuilder)';
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-let last = 0;
 async function get(path) {
-  const wait = last + GAP_MS - Date.now();
-  if (wait > 0) await sleep(wait);
-  last = Date.now();
   // Without the locale cookie, mtgo.com redirects decklist pages and can land on the index instead.
   const res = await fetch(SITE + path, { headers: { 'User-Agent': UA, Cookie: 'locale=en_US' }, signal: AbortSignal.timeout(TIMEOUT_MS) });
   if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`);
@@ -69,22 +67,31 @@ async function main() {
   console.log(`${events.length} events since ${since}`);
 
   const byFormat = Object.fromEntries(FORMATS.map(f => [f, { events: 0, decks: [] }]));
-  let fetched = 0, failed = 0;
-  for (const ev of events) {
-    const file = `${CACHE}/${ev.link.split('/').pop()}.json`;
-    let decks;
-    try { decks = JSON.parse(await readFile(file, 'utf8')); }
-    catch {
-      try {
-        decks = parseEvent(await get(ev.link));
+  const start = Date.now();
+  let fetched = 0, failed = 0, left = 0, next = 0;
+  async function worker() {
+    while (next < events.length) {
+      const ev = events[next++];
+      const file = `${CACHE}/${ev.link.split('/').pop()}.json`;
+      let decks;
+      try { decks = JSON.parse(await readFile(file, 'utf8')); }
+      catch {
+        if (Date.now() - start > BUDGET_MS) { left++; continue; }
+        // A page sometimes comes back without its decklists; one more try usually gets them.
+        for (let tries = 0; !decks && tries < 2; tries++) {
+          try { decks = parseEvent(await get(ev.link)); }
+          catch (err) { if (tries) { failed++; console.warn(`skipped ${ev.link}: ${err.message}`); } else await sleep(2000); }
+        }
+        if (!decks) continue;
         await writeFile(file, JSON.stringify(decks));
         if (++fetched % 25 === 0) console.log(`fetched ${fetched} events…`);
-      } catch (err) { failed++; console.warn(`skipped ${ev.link}: ${err.message}`); continue; }
+      }
+      byFormat[ev.format].events++;
+      byFormat[ev.format].decks.push(...decks);
     }
-    byFormat[ev.format].events++;
-    byFormat[ev.format].decks.push(...decks);
   }
-  console.log(`fetched ${fetched} new events, ${failed} failed`);
+  await Promise.all(Array.from({ length: WORKERS }, worker));
+  console.log(`fetched ${fetched} new events, ${failed} failed${left ? `, ${left} left for the next run` : ''}`);
 
   for (const [format, { events: n, decks }] of Object.entries(byFormat)) {
     const index = new Map();
