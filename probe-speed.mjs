@@ -1,7 +1,10 @@
-const urls = ['/decklist/standard-league-2026-10-2211129', '/decklist/modern-challenge-32-2026-10-2112856954', '/decklist/pauper-league-2026-10-2211153'];
-const uas = { browser: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Safari/537.36', bot: 'mtg-deckbuilder decklist collector (github.com/chanonkanch-debug/mtg-deckbuilder)', none: undefined };
-for (const [k, ua] of Object.entries(uas)) for (const u of urls) {
+const urls = ['/decklist/modern-league-2026-10-2011161', '/decklist/modern-challenge-32-2026-10-1812856599', '/decklist/pauper-league-2026-10-1911153'];
+for (const u of urls) for (let i = 0; i < 2; i++) {
   const t = Date.now();
-  try { const r = await fetch('https://www.mtgo.com' + u, { headers: ua ? { 'User-Agent': ua } : {}, signal: AbortSignal.timeout(40000) }); const s = await r.text(); console.log(k, u, r.status, s.length, Date.now() - t, 'ms'); }
-  catch (e) { console.log(k, u, 'ERR', e.message, Date.now() - t, 'ms'); }
+  const r = await fetch('https://www.mtgo.com' + u, { headers: { 'User-Agent': 'mtg-deckbuilder decklist collector', Cookie: 'locale=en_US' }, redirect: 'manual', signal: AbortSignal.timeout(60000) });
+  const s = await r.text();
+  const i1 = s.indexOf('window.MTGO.decklists.data');
+  console.log(u, r.status, r.headers.get('location'), s.length, Date.now() - t, 'ms', 'idx', i1, JSON.stringify(s.slice(i1, i1 + 150)));
+  if (i1 > 0) { const rest = s.slice(i1); const j = rest.indexOf('window.MTGO.decklists.roundNames'); console.log('  between:', JSON.stringify(rest.slice(Math.max(0, j - 80), j))); }
+  else console.log('  title:', s.match(/<title>[^<]*/)?.[0], JSON.stringify(s.slice(0, 300)));
 }
