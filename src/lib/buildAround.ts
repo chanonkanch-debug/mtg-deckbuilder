@@ -1,10 +1,10 @@
 import type { Card } from './scryfall';
 
-// Build around: the AI read (src/ai) turns the picked cards into "hooks", each a Scryfall search for cards that
+// Build around: EDHREC's "played with" lists (edhrec.ts) and the AI read (src/ai) turn the picked cards into "hooks", each a Scryfall search for cards that
 // feed or pay them off. This file holds what the hooks share: their shape, the user's own phrases, and the one
 // search clause they add to the card search.
 
-export type HookKind = 'ai' | 'custom';
+export type HookKind = 'played' | 'ai' | 'custom';
 export interface Hook { id: string; label: string; kind: HookKind; query: string; seeds: string[]; why?: string }
 
 /** A hook for a phrase the user types, like "the Ring tempts you". */

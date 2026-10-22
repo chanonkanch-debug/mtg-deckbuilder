@@ -120,7 +120,7 @@ function evictOldest(): boolean {
   try { localStorage.removeItem(entries[0][0]); } catch { return false; }
   return true;
 }
-function cacheRead(key: string): CacheEntry | null {
+export function cacheRead(key: string): CacheEntry | null {
   let hit = memCache.get(key);
   if (!hit) {
     try { hit = JSON.parse(localStorage.getItem(CACHE_PREFIX + key) || 'null') ?? undefined; } catch {}
