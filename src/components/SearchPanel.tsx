@@ -13,7 +13,7 @@ import SetPicker from './SetPicker';
 import BuildAround from './BuildAround';
 import { buildAroundQuery, identityFor, type Hook } from '../lib/buildAround';
 import { seedKey, type AiRead } from '../ai/readCards';
-import { fetchPlayedWith, playedHook, type PlayedRead } from '../lib/edhrec';
+import { readPlayedWith, type PlayedState } from '../lib/playedWith';
 
 // Results show PAGE_SIZE cards at a time. Scryfall returns up to 175 per request,
 // so the next Scryfall page is only fetched when paging past what is already loaded.
@@ -64,8 +64,8 @@ export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, o
   const [hooksOff, setHooksOff] = useState<Set<string>>(new Set());
   const [customHooks, setCustomHooks] = useState<Hook[]>([]);
   const [aiRead, setAiRead] = useState<AiRead | null>(null);
-  // EDHREC's "played with" read of each seed, by card name: the read, or why there isn't one.
-  const [played, setPlayed] = useState<Record<string, PlayedRead | { error: string } | 'loading'>>({});
+  // The "played with" read of each seed, by format and card name.
+  const [played, setPlayed] = useState<Record<string, PlayedState>>({});
 
   const [results, setResults] = useState<Card[]>([]);
   const [nextPage, setNextPage] = useState<string | null>(null);
@@ -85,24 +85,23 @@ export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, o
   const aiFits = !!aiRead && aiRead.seeds === seedKey(seeds);
   useEffect(() => {
     for (const s of seeds) {
-      if (played[s.name]) continue;
-      setPlayed(p => ({ ...p, [s.name]: 'loading' }));
-      fetchPlayedWith(s.name)
-        .then(read => setPlayed(p => ({ ...p, [s.name]: read })))
-        .catch(err => setPlayed(p => ({ ...p, [s.name]: { error: err instanceof Error ? err.message : String(err) } })));
+      const key = `${deck.format}|${s.name}`;
+      if (played[key]) continue;
+      setPlayed(p => ({ ...p, [key]: 'loading' }));
+      readPlayedWith(s.name, deck.format)
+        .then(read => setPlayed(p => ({ ...p, [key]: read })))
+        .catch(err => setPlayed(p => ({ ...p, [key]: { error: err instanceof Error ? err.message : String(err) } })));
     }
-  }, [seeds, played]);
-  const playedHooks = useMemo(() => seeds.flatMap(s => {
-    const r = played[s.name];
-    const hook = r && typeof r === 'object' && 'cards' in r ? playedHook(r) : null;
-    return hook ? [hook] : [];
-  }), [seeds, played]);
+  }, [seeds, played, deck.format]);
+  const playedNow = useMemo(() => Object.fromEntries(seeds.map(s => [s.name, played[`${deck.format}|${s.name}`]]).filter(e => e[1])) as Record<string, PlayedState>,
+    [seeds, played, deck.format]);
+  const playedHooks = useMemo(() => Object.values(playedNow).flatMap(r => typeof r === 'object' && 'hook' in r && r.hook ? [r.hook] : []), [playedNow]);
   const hooks = useMemo(() => !seeds.length ? [] : [...playedHooks, ...(aiFits ? aiRead!.hooks : []), ...customHooks],
     [seeds, playedHooks, customHooks, aiFits, aiRead]);
   const cmdrLimits = deck.format === 'commander' && onlyIdentity && entriesOf(deck).some(e => e.cmdr);
   const buildClause = useMemo(() => buildAroundQuery(seeds, hooks.filter(h => !hooksOff.has(h.id)), cmdrLimits ? null : identityFor(seeds)),
     [seeds, hooks, hooksOff, cmdrLimits]);
-  const colorsNote = cmdrLimits ? "in your commander's colors" : `in ${seeds.length > 1 ? 'these cards\'' : 'this card\'s'} colors`;
+  const colorsNote = cmdrLimits ? ", in your commander's colors" : `; AI and phrase matches stay in ${seeds.length > 1 ? 'these cards\'' : 'this card\'s'} colors`;
 
   // The search is empty until the user types something or picks a filter, set or card to build around.
   const hasQuery = !!submitted.trim() || filters.size > 0 || sets.size > 0 || !!buildClause;
@@ -245,7 +244,7 @@ export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, o
         })}
       </div>
       {openPanel === 'build' && (
-        <BuildAround deck={deck} seeds={seeds} setSeeds={changeSeeds} hooks={hooks} off={hooksOff} colorsNote={colorsNote} played={played}
+        <BuildAround deck={deck} seeds={seeds} setSeeds={changeSeeds} hooks={hooks} off={hooksOff} colorsNote={colorsNote} played={playedNow}
           aiRead={aiFits ? aiRead : null} onAiRead={r => { delay.current = FILTER_DELAY_MS; setAiRead(r); }}
           onToggleHook={id => { delay.current = FILTER_DELAY_MS; setHooksOff(o => { const n = new Set(o); if (!n.delete(id)) n.add(id); return n; }); }}
           onAddHook={h => { delay.current = FILTER_DELAY_MS; setCustomHooks(c => (c.some(x => x.id === h.id) ? c : [...c, h])); setHooksOff(o => { const n = new Set(o); n.delete(h.id); return n; }); }}

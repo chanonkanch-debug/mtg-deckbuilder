@@ -18,15 +18,18 @@ export const MAX_HOOKS = 10;
 
 /**
  * The search clause Build around adds to the card search: cards matching any turned-on hook, minus the seed
- * cards themselves, in the seeds' colors (pass null when the commander's colors already limit the search).
+ * cards themselves. Hooks other than "played with" are limited to the seeds' colors (pass null when the
+ * commander's colors already limit the search); the cards decks play with a seed can be in other colors.
  */
 export function buildAroundQuery(seeds: Card[], hooks: Hook[], identity: string | null): string {
   if (!hooks.length) return '';
-  const any = hooks.slice(0, MAX_HOOKS).map(h => h.query);
-  const parts = [any.length > 1 ? `(${any.join(' or ')})` : any[0]];
-  parts.push(...seeds.map(s => `-!"${s.name.replace(/"/g, '')}"`));
-  if (identity) parts.push(`id<=${identity}`);
-  return parts.join(' ');
+  const used = hooks.slice(0, MAX_HOOKS);
+  const or = (qs: string[]) => (qs.length > 1 ? `(${qs.join(' or ')})` : qs[0]);
+  const played = used.filter(h => h.kind === 'played').map(h => h.query);
+  const rest = used.filter(h => h.kind !== 'played').map(h => h.query);
+  const restClause = rest.length && identity ? `(${or(rest)} id<=${identity})` : rest.length ? or(rest) : '';
+  const any = [...played, ...(restClause ? [restClause] : [])];
+  return [or(any), ...seeds.map(s => `-!"${s.name.replace(/"/g, '')}"`)].join(' ');
 }
 
 /** The seeds' colors together, as a Scryfall color identity. */
