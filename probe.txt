@@ -1,12 +1,25 @@
-curl /decklist/standard-league-2026-10-2211129 302 0 0.176826s
-curl /decklist/modern-challenge-32-2026-10-2112856954 302 0 0.154647s
-browser /decklist/standard-league-2026-10-2211129 200 29581 532 ms
-browser /decklist/modern-challenge-32-2026-10-2112856954 200 262860 90 ms
-browser /decklist/pauper-league-2026-10-2211153 200 29581 55 ms
-bot /decklist/standard-league-2026-10-2211129 200 262860 112 ms
-bot /decklist/modern-challenge-32-2026-10-2112856954 200 29581 74 ms
-bot /decklist/pauper-league-2026-10-2211153 200 29581 48 ms
-none /decklist/standard-league-2026-10-2211129 200 262860 106 ms
-none /decklist/modern-challenge-32-2026-10-2112856954 200 29581 53 ms
-none /decklist/pauper-league-2026-10-2211153 200 262860 83 ms
+HTTP/1.1 200 OK
+Set-Cookie: JSESSIONID=DDF236BE39348C4C4ABE3C8F4365C7AC.lvs-foyert1-3409; Path=/; Secure; HttpOnly
+Set-Cookie: locale=en_US; Expires=Fri, 22-Oct-2027 08:32:11 GMT; Path=/; Secure
+HTTP/1.1 200 OK
+Set-Cookie: JSESSIONID=AFDCA15EBC83DC31E9D929368FCD893C.lvs-foyert1-3409; Path=/; Secure; HttpOnly
+Set-Cookie: locale=en_US; Expires=Fri, 22-Oct-2027 08:32:34 GMT; Path=/; Secure
+HTTP/1.1 200 OK
+Set-Cookie: JSESSIONID=B38BF8EA2FFD7C8CB1146E0FD2D0A9F7.lvs-foyert1-3409; Path=/; Secure; HttpOnly
+Set-Cookie: locale=en_US; Expires=Fri, 22-Oct-2027 08:32:39 GMT; Path=/; Secure
+HTTP/1.1 200 OK
+Set-Cookie: JSESSIONID=BD4FA654745D4C984F3B576455060977.lvs-foyert1-3409; Path=/; Secure; HttpOnly
+Set-Cookie: locale=en_US; Expires=Fri, 22-Oct-2027 08:32:39 GMT; Path=/; Secure
+HTTP/1.1 200 OK
+Set-Cookie: JSESSIONID=3E637DB2F89A8D7AC1A5E1783B0389C8.lvs-foyert1-3409; Path=/; Secure; HttpOnly
+Set-Cookie: locale=en_US; Expires=Fri, 22-Oct-2027 08:32:40 GMT; Path=/; Secure
+HTTP/1.1 200 OK
+Set-Cookie: JSESSIONID=4FE3E98253D7FECF52493BC4BCF813D7.lvs-foyert2-3409; Path=/; Secure; HttpOnly
+Set-Cookie: locale=en_US; Expires=Fri, 22-Oct-2027 08:32:40 GMT; Path=/; Secure
+cookie-jar 200 327588 https://www.mtgo.com/decklist/legacy-challenge-32-2026-10-2112856954
+cookie-jar 200 103116 https://www.mtgo.com/decklist/standard-league-2026-10-2211129
+a.html:<title>| Decklists | Magic: The Gathering Online
+b.html:<title>| Decklists | Magic: The Gathering Online
+a.html:1
+b.html:1
 ls: cannot access 'public/decks': No such file or directory
