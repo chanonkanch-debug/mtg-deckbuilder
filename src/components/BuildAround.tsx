@@ -3,7 +3,7 @@ import { autocomplete, fetchNamed, type Card } from '../lib/scryfall';
 import { entriesOf, type Deck } from '../lib/rules';
 import { customHook, MAX_HOOKS, type Hook } from '../lib/buildAround';
 import { readCards, seedKey, type AiRead } from '../ai/readCards';
-import type { PlayedRead } from '../lib/edhrec';
+import { playedSource, type PlayedState } from '../lib/playedWith';
 import { keyFor, loadAiSettings, PROVIDERS, providerById, saveAiSettings } from '../ai/providers';
 
 interface Props {
@@ -14,7 +14,7 @@ interface Props {
   off: Set<string>;
   onToggleHook: (id: string) => void;
   onAddHook: (hook: Hook) => void;
-  /** What the search is limited to, e.g. "B and R cards". */
+  /** What the search's colors are limited to, as the end of a sentence. */
   colorsNote: string;
   hoverZoom: boolean;
   onPreview: (e: React.MouseEvent, src: string | null) => void;
@@ -22,11 +22,11 @@ interface Props {
   /** The AI read of the current cards, if there is one. */
   aiRead: AiRead | null;
   onAiRead: (read: AiRead | null) => void;
-  /** EDHREC's "played with" read of each seed, by card name. */
-  played: Record<string, PlayedRead | { error: string } | 'loading'>;
+  /** The "played with" read of each seed, by card name. */
+  played: Record<string, PlayedState>;
 }
 
-const KIND_LABEL: Record<Hook['kind'], string> = { played: 'Played with, from EDHREC', ai: 'AI read', custom: 'Your phrase' };
+const KIND_LABEL: Record<Hook['kind'], string> = { played: 'Played with', ai: 'AI read', custom: 'Your phrase' };
 // Adding a few cards in a row asks the AI once, after the last one.
 const READ_DELAY_MS = 600;
 
@@ -136,9 +136,8 @@ export default function BuildAround({ deck, seeds, setSeeds, hooks, off, onToggl
           <div className="flabel">What they care about</div>
           {seeds.map(s => {
             const r = played[s.name];
-            const text = r === 'loading' ? `Looking up the cards played with ${s.name} on EDHREC…`
-              : r && 'error' in r ? r.error
-              : r && !r.cards.length ? `EDHREC has too few Commander decks with ${s.name} to say what's played with it.` : '';
+            const text = r === 'loading' ? `Looking up the cards played with ${s.name} in ${playedSource(deck.format)}…`
+              : r && 'error' in r ? r.error : r?.note ?? '';
             return text && <p key={s.name} className="small muted" style={{ margin: '0 0 4px' }}>{text}</p>;
           })}
           <div className="ai-read small">
@@ -189,7 +188,7 @@ export default function BuildAround({ deck, seeds, setSeeds, hooks, off, onToggl
             <button type="submit">Add phrase</button>
           </form>
           <p className="small muted">
-            {on ? `Showing cards that match any of the ${Math.min(on, MAX_HOOKS)} selected, ${colorsNote}.` : 'Select at least one to search.'}
+            {on ? `Showing cards that match any of the ${Math.min(on, MAX_HOOKS)} selected${colorsNote}.` : 'Select at least one to search.'}
             {on > MAX_HOOKS && ` Only the first ${MAX_HOOKS} are used; turn some off to pick which.`}
             {' '}Sorting by EDHREC rank puts the most played first.
           </p>

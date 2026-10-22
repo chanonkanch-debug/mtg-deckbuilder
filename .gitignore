@@ -6,3 +6,7 @@ dist
 # Local secrets, such as VITE_GEMINI_API_KEY
 .env.local
 .env.*.local
+
+# Collected by scripts/collect-decklists.mjs in the deploy workflow
+.decklist-cache
+public/decks

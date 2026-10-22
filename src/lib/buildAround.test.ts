@@ -9,8 +9,15 @@ describe('build around search', () => {
   it('adds a search clause: any hook, not the seeds, in their colors', () => {
     const a = card('Krenko, Mob Boss', '', '', [], ['R']), b = card('Blood Artist', '', '', [], ['B']);
     expect(identityFor([a, b])).toBe('BR');
-    expect(buildAroundQuery([a, b], [customHook('one'), customHook('two')], 'BR')).toBe('(o:"one" or o:"two") -!"Krenko, Mob Boss" -!"Blood Artist" id<=BR');
+    expect(buildAroundQuery([a, b], [customHook('one'), customHook('two')], 'BR')).toBe('((o:"one" or o:"two") id<=BR) -!"Krenko, Mob Boss" -!"Blood Artist"');
     expect(buildAroundQuery([a], [customHook('one')], null)).toBe('o:"one" -!"Krenko, Mob Boss"');
     expect(buildAroundQuery([a], [], 'R')).toBe('');
+  });
+  it("doesn't limit the cards played with a seed to its colors", () => {
+    const a = card('Slickshot Show-Off', '', '', [], ['R']);
+    const played = { id: 'played:x', label: 'Played with', kind: 'played' as const, query: '(!"Preordain" or !"Lightning Bolt")', seeds: [] };
+    expect(buildAroundQuery([a], [played], 'R')).toBe('(!"Preordain" or !"Lightning Bolt") -!"Slickshot Show-Off"');
+    expect(buildAroundQuery([a], [played, customHook('prowess')], 'R'))
+      .toBe('((!"Preordain" or !"Lightning Bolt") or (o:"prowess" id<=R)) -!"Slickshot Show-Off"');
   });
 });

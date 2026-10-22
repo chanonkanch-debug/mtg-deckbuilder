@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # Daily, to pick up new MTGO tournament decklists for Build around.
+  schedule:
+    - cron: '17 6 * * *'
 
 permissions:
   contents: read
@@ -25,6 +28,15 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+      # Event pages never change once published, so they're cached between runs and only new ones are fetched.
+      - uses: actions/cache@v4
+        with:
+          path: .decklist-cache
+          key: decklists-${{ github.run_id }}
+          restore-keys: decklists-
+      # If mtgo.com is down or has changed, the site still deploys, just without fresh decklists.
+      - run: node scripts/collect-decklists.mjs
+        continue-on-error: true
       - run: npm run build
       - uses: actions/upload-pages-artifact@v4
         with:
