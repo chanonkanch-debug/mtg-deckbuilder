@@ -21,7 +21,7 @@ async function get(path) {
   const wait = last + GAP_MS - Date.now();
   if (wait > 0) await sleep(wait);
   last = Date.now();
-  const res = await fetch(SITE + path, { headers: { 'User-Agent': UA } });
+  const res = await fetch(SITE + path, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(30_000) });
   if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`);
   return res.text();
 }
@@ -76,7 +76,7 @@ async function main() {
       try {
         decks = parseEvent(await get(ev.link));
         await writeFile(file, JSON.stringify(decks));
-        fetched++;
+        if (++fetched % 25 === 0) console.log(`fetched ${fetched} events…`);
       } catch (err) { failed++; console.warn(`skipped ${ev.link}: ${err.message}`); continue; }
     }
     byFormat[ev.format].events++;

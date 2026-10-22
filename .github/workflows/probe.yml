@@ -14,7 +14,7 @@ jobs:
           node-version: 22
       - run: |
           exec > probe.txt 2>&1
-          time node scripts/collect-decklists.mjs 14
+          date; timeout 420 node scripts/collect-decklists.mjs 14; echo exit $?; date
           ls -la public/decks
       - run: |
           git config user.name probe; git config user.email probe@example.com
