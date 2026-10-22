@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { autocomplete, fetchNamed, type Card } from '../lib/scryfall';
 import { entriesOf, type Deck } from '../lib/rules';
 import { customHook, MAX_HOOKS, type Hook } from '../lib/buildAround';
-import { readCards, type AiRead } from '../ai/readCards';
-import { loadAiSettings, PROVIDERS, providerById, saveAiSettings } from '../ai/providers';
+import { readCards, seedKey, type AiRead } from '../ai/readCards';
+import { keyFor, loadAiSettings, PROVIDERS, providerById, saveAiSettings } from '../ai/providers';
 
 interface Props {
   deck: Deck;
@@ -18,12 +18,14 @@ interface Props {
   hoverZoom: boolean;
   onPreview: (e: React.MouseEvent, src: string | null) => void;
   onHidePreview: () => void;
-  /** The AI read of the current cards, if there is one; null goes back to the quick read. */
+  /** The AI read of the current cards, if there is one. */
   aiRead: AiRead | null;
   onAiRead: (read: AiRead | null) => void;
 }
 
-const KIND_LABEL: Record<Hook['kind'], string> = { ai: 'AI read', fuel: 'Turns a drawback into fuel', theme: 'Theme', keyword: 'Keyword', mechanic: 'Mechanic', tribe: 'Tribe', custom: 'Your phrase' };
+const KIND_LABEL: Record<Hook['kind'], string> = { ai: 'AI read', custom: 'Your phrase' };
+// Adding a few cards in a row asks the AI once, after the last one.
+const READ_DELAY_MS = 600;
 
 /** Pick cards to build around; what they care about is added to the card search below, with the other filters. */
 export default function BuildAround({ deck, seeds, setSeeds, hooks, off, onToggleHook, onAddHook, colorsNote, hoverZoom, onPreview, onHidePreview, aiRead, onAiRead }: Props) {
@@ -36,7 +38,8 @@ export default function BuildAround({ deck, seeds, setSeeds, hooks, off, onToggl
   const [keyInput, setKeyInput] = useState('');
   const [editingKey, setEditingKey] = useState(false);
   const provider = providerById(aiSettings.provider);
-  const apiKey = aiSettings.keys[provider.id] || '';
+  const apiKey = keyFor(provider, aiSettings);
+  const readSeq = useRef(0);
 
   useEffect(() => {
     const v = name.trim();
@@ -61,15 +64,29 @@ export default function BuildAround({ deck, seeds, setSeeds, hooks, off, onToggl
     }
   }
 
-  async function readWithAi() {
+  async function readWithAi(fresh = false) {
+    const mySeq = ++readSeq.current;
     setAiStatus({ text: `Reading the cards with ${provider.label.split(' ')[0]}…`, busy: true });
     try {
-      onAiRead(await readCards(seeds, deck.format, provider, apiKey));
+      const read = await readCards(seeds, deck.format, provider, apiKey, fresh);
+      if (mySeq !== readSeq.current) return; // the cards changed while this read was running
+      onAiRead(read);
       setAiStatus(null);
     } catch (err) {
+      if (mySeq !== readSeq.current) return;
       setAiStatus({ text: `The AI read failed: ${err instanceof Error ? err.message : String(err)}`, busy: false });
     }
   }
+
+  // Read the cards as soon as they change (and a key is set), unless this exact set is already read.
+  const key = seedKey(seeds);
+  useEffect(() => {
+    if (!seeds.length || !apiKey || aiRead) { readSeq.current++; setAiStatus(null); return; }
+    setAiStatus({ text: `Reading the cards with ${provider.label.split(' ')[0]}…`, busy: true });
+    const t = setTimeout(() => readWithAi(), READ_DELAY_MS);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, apiKey, deck.format, !!aiRead]);
 
   function saveKey(e: React.FormEvent) {
     e.preventDefault();
@@ -115,12 +132,7 @@ export default function BuildAround({ deck, seeds, setSeeds, hooks, off, onToggl
         <div className="fgroup">
           <div className="flabel">What they care about</div>
           <div className="ai-read small">
-            {aiRead ? (
-              <>
-                <p style={{ margin: '0 0 6px' }}><strong>AI read:</strong> {aiRead.summary}</p>
-                <button type="button" onClick={() => onAiRead(null)}>Use the quick read instead</button>
-              </>
-            ) : !apiKey || editingKey ? (
+            {!apiKey || editingKey ? (
               <form className="row" onSubmit={saveKey}>
                 {PROVIDERS.length > 1 && (
                   <select value={provider.id} title="AI service" onChange={e => { const next = { ...aiSettings, provider: e.target.value }; saveAiSettings(next); setAiSettings(next); }}>
@@ -128,20 +140,27 @@ export default function BuildAround({ deck, seeds, setSeeds, hooks, off, onToggl
                   </select>
                 )}
                 <input type="password" value={keyInput} onChange={e => setKeyInput(e.target.value)} placeholder={`${provider.label} API key, ${provider.keyHint}`} autoComplete="off" />
-                <button type="submit">{apiKey && !keyInput.trim() ? 'Remove key' : 'Save key'}</button>
+                <button type="submit">{aiSettings.keys[provider.id] && !keyInput.trim() ? 'Remove key' : 'Save key'}</button>
                 {editingKey && <button type="button" onClick={() => { setEditingKey(false); setKeyInput(''); }}>Cancel</button>}
                 <p className="muted" style={{ margin: '4px 0 0', flexBasis: '100%' }}>
-                  For a smarter read, add a free <a href={provider.keyUrl} target="_blank" rel="noreferrer">{provider.label.split(" ")[0]} API key</a>. It's kept only in this browser and sent only to {provider.label.replace(/.*\((.*)\)/, '$1')}. {provider.cost}
+                  The AI reads your cards and finds what works with them. Add a free <a href={provider.keyUrl} target="_blank" rel="noreferrer">{provider.label.split(' ')[0]} API key</a> to
+                  turn it on; it's kept only in this browser and sent only to {provider.label.replace(/.*\((.*)\)/, '$1')}. {provider.cost}
                 </p>
               </form>
             ) : aiStatus?.busy ? (
               <p className="muted" style={{ margin: 0 }}>{aiStatus.text}</p>
+            ) : aiRead ? (
+              <p style={{ margin: 0 }}>
+                <strong>AI read:</strong> {aiRead.summary}{' '}
+                <button type="button" className="linkish muted" onClick={() => readWithAi(true)}>Read again</button>
+                {!provider.envKey && <>{' '}<button type="button" className="linkish muted" onClick={() => setEditingKey(true)}>Change key</button></>}
+              </p>
             ) : (
-              <>
-                <button type="button" onClick={readWithAi}>Read with AI</button>{' '}
-                <button type="button" className="linkish muted" onClick={() => setEditingKey(true)}>Change key</button>
-                {aiStatus && <p className="muted" style={{ margin: '4px 0 0' }}>{aiStatus.text}</p>}
-              </>
+              <p className="muted" style={{ margin: 0 }}>
+                {aiStatus?.text}{' '}
+                <button type="button" onClick={() => readWithAi(true)}>Try again</button>
+                {!provider.envKey && <>{' '}<button type="button" className="linkish muted" onClick={() => setEditingKey(true)}>Change key</button></>}
+              </p>
             )}
           </div>
           <div className="chips">
@@ -152,7 +171,7 @@ export default function BuildAround({ deck, seeds, setSeeds, hooks, off, onToggl
                 {h.label}{h.seeds.length > 1 ? ` ×${h.seeds.length}` : ''}
               </button>
             ))}
-            {hooks.length === 0 && <span className="small muted">Nothing found in the rules text. Add a phrase below.</span>}
+            {hooks.length === 0 && !aiStatus?.busy && <span className="small muted">{apiKey ? 'No searches yet.' : 'Without the AI, add your own phrases below.'}</span>}
           </div>
           <form className="row" style={{ marginTop: 6 }}
             onSubmit={e => { e.preventDefault(); if (phrase.trim()) { onAddHook(customHook(phrase)); setPhrase(''); } }}>

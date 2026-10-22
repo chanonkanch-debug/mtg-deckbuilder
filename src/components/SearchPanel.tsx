@@ -11,7 +11,7 @@ import { FILTERS } from '../lib/filters';
 import { ARCHETYPES } from '../lib/archetypes';
 import SetPicker from './SetPicker';
 import BuildAround from './BuildAround';
-import { buildAroundQuery, hooksForSeeds, identityFor, type Hook } from '../lib/buildAround';
+import { buildAroundQuery, identityFor, type Hook } from '../lib/buildAround';
 import { seedKey, type AiRead } from '../ai/readCards';
 
 // Results show PAGE_SIZE cards at a time. Scryfall returns up to 175 per request,
@@ -78,9 +78,9 @@ export default function SearchPanel({ deck, prefs, setPrefs, onAdd, onPreview, o
 
   // Build around adds one clause to the search: cards matching any of the seeds' turned-on hooks. The seeds'
   // colors limit it unless the commander's colors already do.
-  // An AI read of these exact cards replaces the quick pattern read.
+  // The AI read of these exact cards, plus any phrases the user added.
   const aiFits = !!aiRead && aiRead.seeds === seedKey(seeds);
-  const hooks = useMemo(() => !seeds.length ? [] : [...(aiFits ? aiRead!.hooks : hooksForSeeds(seeds)), ...customHooks],
+  const hooks = useMemo(() => !seeds.length ? [] : [...(aiFits ? aiRead!.hooks : []), ...customHooks],
     [seeds, customHooks, aiFits, aiRead]);
   const cmdrLimits = deck.format === 'commander' && onlyIdentity && entriesOf(deck).some(e => e.cmdr);
   const buildClause = useMemo(() => buildAroundQuery(seeds, hooks.filter(h => !hooksOff.has(h.id)), cmdrLimits ? null : identityFor(seeds)),
