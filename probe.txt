@@ -1,6 +1,12 @@
-Thu Oct 22 08:22:39 UTC 2026
-172 events since 2026-10-08
-skipped /decklist/standard-league-2026-10-2211129: The operation was aborted due to timeout
-skipped /decklist/pioneer-league-2026-10-2211137: The operation was aborted due to timeout
-skipped /decklist/legacy-league-2026-10-2111169: The operation was aborted due to timeout
-fetched 25 events…
+curl /decklist/standard-league-2026-10-2211129 302 0 0.176826s
+curl /decklist/modern-challenge-32-2026-10-2112856954 302 0 0.154647s
+browser /decklist/standard-league-2026-10-2211129 200 29581 532 ms
+browser /decklist/modern-challenge-32-2026-10-2112856954 200 262860 90 ms
+browser /decklist/pauper-league-2026-10-2211153 200 29581 55 ms
+bot /decklist/standard-league-2026-10-2211129 200 262860 112 ms
+bot /decklist/modern-challenge-32-2026-10-2112856954 200 29581 74 ms
+bot /decklist/pauper-league-2026-10-2211153 200 29581 48 ms
+none /decklist/standard-league-2026-10-2211129 200 262860 106 ms
+none /decklist/modern-challenge-32-2026-10-2112856954 200 29581 53 ms
+none /decklist/pauper-league-2026-10-2211153 200 262860 83 ms
+ls: cannot access 'public/decks': No such file or directory
