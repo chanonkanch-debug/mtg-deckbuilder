@@ -1,80 +1,35 @@
-Thu Oct 22 08:33:13 UTC 2026
-172 events since 2026-10-08
+Thu Oct 22 08:57:56 UTC 2026
+52 events since 2026-10-18
+skipped /decklist/legacy-league-2026-10-2011169: no decklist data on the page
+skipped /decklist/pioneer-challenge-32-2026-10-1912856619: no decklist data on the page
 fetched 25 events…
-fetched 50 events…
-skipped /decklist/legacy-league-2026-10-1811169: no decklist data on the page
-skipped /decklist/vintage-league-2026-10-1811185: no decklist data on the page
-skipped /decklist/vintage-challenge-32-2026-10-1712856595: The operation was aborted due to timeout
-skipped /decklist/modern-challenge-32-2026-10-1712856594: no decklist data on the page
-skipped /decklist/modern-showcase-challenge-2026-10-1712856566: no decklist data on the page
-skipped /decklist/legacy-challenge-32-2026-10-1712856592: no decklist data on the page
-skipped /decklist/pauper-challenge-16-2026-10-1712856591: no decklist data on the page
-skipped /decklist/modern-challenge-16-2026-10-1712856590: no decklist data on the page
-skipped /decklist/modern-challenge-32-2026-10-1712856762: no decklist data on the page
-skipped /decklist/standard-league-2026-10-1711129: no decklist data on the page
-skipped /decklist/pauper-league-2026-10-1711153: The operation was aborted due to timeout
-skipped /decklist/legacy-challenge-32-2026-10-1612856588: no decklist data on the page
-skipped /decklist/standard-challenge-32-2026-10-1612856586: no decklist data on the page
-skipped /decklist/modern-league-2026-10-1511161: no decklist data on the page
-fetched 75 events…
-skipped /decklist/standard-league-2026-10-1411129: The operation was aborted due to timeout
-skipped /decklist/modern-league-2026-10-1411161: no decklist data on the page
-skipped /decklist/standard-challenge-32-2026-10-1312856199: no decklist data on the page
-skipped /decklist/legacy-challenge-32-2026-10-1312856197: no decklist data on the page
-skipped /decklist/pauper-challenge-16-2026-10-1312856196: no decklist data on the page
-skipped /decklist/modern-challenge-16-2026-10-1312856195: no decklist data on the page
-skipped /decklist/modern-challenge-32-2026-10-1312856194: no decklist data on the page
-skipped /decklist/standard-league-2026-10-1311129: no decklist data on the page
-skipped /decklist/pioneer-league-2026-10-1311137: no decklist data on the page
-skipped /decklist/pauper-league-2026-10-1311153: no decklist data on the page
-skipped /decklist/modern-league-2026-10-1311161: no decklist data on the page
-skipped /decklist/legacy-league-2026-10-1311169: no decklist data on the page
-skipped /decklist/vintage-league-2026-10-1311185: no decklist data on the page
-skipped /decklist/pioneer-challenge-32-2026-10-1212856192: no decklist data on the page
-skipped /decklist/standard-challenge-32-2026-10-1212856191: no decklist data on the page
-skipped /decklist/pauper-challenge-32-2026-10-1212856189: no decklist data on the page
-skipped /decklist/modern-challenge-16-2026-10-1212856487: no decklist data on the page
-skipped /decklist/standard-league-2026-10-1211129: no decklist data on the page
-skipped /decklist/pioneer-league-2026-10-1211137: no decklist data on the page
-skipped /decklist/pauper-league-2026-10-1211153: no decklist data on the page
-skipped /decklist/modern-league-2026-10-1211161: no decklist data on the page
-skipped /decklist/legacy-league-2026-10-1211169: no decklist data on the page
-skipped /decklist/legacy-challenge-16-2026-10-1112856174: no decklist data on the page
-skipped /decklist/modern-challenge-32-2026-10-1112856172: no decklist data on the page
-skipped /decklist/standard-league-2026-10-1111129: no decklist data on the page
-skipped /decklist/pioneer-league-2026-10-1111137: no decklist data on the page
-skipped /decklist/pauper-league-2026-10-1111153: no decklist data on the page
-skipped /decklist/modern-league-2026-10-1111161: no decklist data on the page
-skipped /decklist/legacy-league-2026-10-1111169: no decklist data on the page
-skipped /decklist/vintage-league-2026-10-1111185: no decklist data on the page
-skipped /decklist/pioneer-challenge-16-2026-10-1012856171: no decklist data on the page
-skipped /decklist/vintage-challenge-32-2026-10-1012856168: no decklist data on the page
-skipped /decklist/modern-challenge-32-2026-10-1012856335: no decklist data on the page
-skipped /decklist/standard-championship-week-finals-2026-10-1012856137: no decklist data on the page
-skipped /decklist/legacy-challenge-32-2026-10-1012856165: no decklist data on the page
-skipped /decklist/pauper-challenge-16-2026-10-1012856164: no decklist data on the page
-skipped /decklist/modern-challenge-16-2026-10-1012856163: no decklist data on the page
-skipped /decklist/modern-challenge-32-2026-10-1012856339: no decklist data on the page
-skipped /decklist/standard-league-2026-10-1011129: no decklist data on the page
-skipped /decklist/pioneer-league-2026-10-1011137: no decklist data on the page
-skipped /decklist/pauper-league-2026-10-1011153: no decklist data on the page
-skipped /decklist/modern-league-2026-10-1011161: no decklist data on the page
-fetched 100 events…
-fetched 116 new events, 56 failed
-standard: 514 decks from 22 events, 567 cards
-pioneer: 228 decks from 17 events, 501 cards
-modern: 697 decks from 22 events, 687 cards
-legacy: 426 decks from 18 events, 552 cards
-vintage: 212 decks from 18 events, 347 cards
-pauper: 479 decks from 19 events, 508 cards
+skipped /decklist/standard-challenge-32-2026-10-1912856618: no decklist data on the page
+skipped /decklist/pauper-challenge-32-2026-10-1912856616: no decklist data on the page
+skipped /decklist/modern-challenge-64-2026-10-1912856886: no decklist data on the page
+skipped /decklist/modern-league-2026-10-2011161: no decklist data on the page
+skipped /decklist/pauper-league-2026-10-1911153: no decklist data on the page
+skipped /decklist/vintage-challenge-32-2026-10-1812856609: no decklist data on the page
+skipped /decklist/legacy-league-2026-10-1911169: no decklist data on the page
+skipped /decklist/pioneer-challenge-16-2026-10-1812856608: no decklist data on the page
+skipped /decklist/pauper-challenge-32-2026-10-1812856607: no decklist data on the page
+skipped /decklist/vintage-challenge-16-2026-10-1812856602: no decklist data on the page
+skipped /decklist/modern-challenge-32-2026-10-1812856599: no decklist data on the page
+skipped /decklist/modern-league-2026-10-1911161: no decklist data on the page
+fetched 38 new events, 14 failed
+standard: 135 decks from 8 events, 370 cards
+pioneer: 20 decks from 5 events, 195 cards
+modern: 248 decks from 8 events, 508 cards
+legacy: 176 decks from 7 events, 457 cards
+vintage: 26 decks from 5 events, 165 cards
+pauper: 71 decks from 5 events, 278 cards
 exit 0
-Thu Oct 22 08:56:14 UTC 2026
-total 268
-drwxr-xr-x 2 runner runner  4096 Oct 22 08:56 .
-drwxr-xr-x 3 runner runner  4096 Oct 22 08:33 ..
--rw-r--r-- 1 runner runner 43541 Oct 22 08:56 legacy.json
--rw-r--r-- 1 runner runner 71901 Oct 22 08:56 modern.json
--rw-r--r-- 1 runner runner 38635 Oct 22 08:56 pauper.json
--rw-r--r-- 1 runner runner 26258 Oct 22 08:56 pioneer.json
--rw-r--r-- 1 runner runner 48886 Oct 22 08:56 standard.json
--rw-r--r-- 1 runner runner 27871 Oct 22 08:56 vintage.json
+Thu Oct 22 09:01:27 UTC 2026
+total 112
+drwxr-xr-x 2 runner runner  4096 Oct 22 08:57 .
+drwxr-xr-x 3 runner runner  4096 Oct 22 08:57 ..
+-rw-r--r-- 1 runner runner 21612 Oct 22 09:01 legacy.json
+-rw-r--r-- 1 runner runner 29637 Oct 22 09:01 modern.json
+-rw-r--r-- 1 runner runner  9443 Oct 22 09:01 pauper.json
+-rw-r--r-- 1 runner runner  5202 Oct 22 09:01 pioneer.json
+-rw-r--r-- 1 runner runner 16925 Oct 22 09:01 standard.json
+-rw-r--r-- 1 runner runner  5629 Oct 22 09:01 vintage.json
