@@ -131,7 +131,7 @@ export default function BuildAround({ deck, seeds, setSeeds, hooks, off, onToggl
                 <button type="submit">{apiKey && !keyInput.trim() ? 'Remove key' : 'Save key'}</button>
                 {editingKey && <button type="button" onClick={() => { setEditingKey(false); setKeyInput(''); }}>Cancel</button>}
                 <p className="muted" style={{ margin: '4px 0 0', flexBasis: '100%' }}>
-                  For a smarter read, add your own <a href={provider.keyUrl} target="_blank" rel="noreferrer">API key</a>. It's kept only in this browser and sent only to {provider.label.replace(/.*\((.*)\)/, '$1')}. Each read costs a few cents on your account.
+                  For a smarter read, add a free <a href={provider.keyUrl} target="_blank" rel="noreferrer">{provider.label.split(" ")[0]} API key</a>. It's kept only in this browser and sent only to {provider.label.replace(/.*\((.*)\)/, '$1')}. {provider.cost}
                 </p>
               </form>
             ) : aiStatus?.busy ? (
