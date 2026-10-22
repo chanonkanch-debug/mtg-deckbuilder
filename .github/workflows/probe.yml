@@ -2,11 +2,15 @@ name: Probe MTGO
 on:
   push:
     branches: [probe-mtgo]
+permissions:
+  contents: write
 jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v5
       - run: |
+          exec > probe.txt 2>&1
           UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Safari/537.36"
           curl -sSL -A "$UA" https://www.mtgo.com/decklists -o index.html; wc -c index.html
           grep -o 'href="[^"]*decklist/[^"]*"' index.html | head -5
@@ -27,3 +31,8 @@ jobs:
           else:
               print(s[:3000])
           PY
+      - run: |
+          head -c 2000000 d.html > page.html || true
+          git config user.name probe; git config user.email probe@example.com
+          git add probe.txt page.html; git commit -m "probe output [skip ci]"; git push
+        if: always()
