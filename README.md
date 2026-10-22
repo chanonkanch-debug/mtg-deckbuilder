@@ -12,8 +12,9 @@ A Magic: The Gathering deck builder that runs entirely in the browser, using the
 - Regular art by default, with an option to show alternate arts and a printing picker per card
 - 20 results per page, adjustable card size, hover-to-enlarge, and a card view on right-click
 - **Try** on any result to preview a swap before making it
-- **Build around:** pick the cards you want to play and Google's Gemini (free tier) reads them and works out
-  what they want; the search then shows cards that work with them. Needs a free Gemini key (see Development).
+- **Build around:** pick the cards you want to play and the search shows the cards Commander decks on EDHREC
+  play most often with them (leaving out staples). Google's Gemini (free tier) can also read them and work out
+  what they want; that part needs a free Gemini key (see Development).
   Other AI services can be added in `src/ai/providers.ts`
 
 **Deck**

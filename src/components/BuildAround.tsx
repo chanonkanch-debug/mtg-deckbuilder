@@ -3,6 +3,7 @@ import { autocomplete, fetchNamed, type Card } from '../lib/scryfall';
 import { entriesOf, type Deck } from '../lib/rules';
 import { customHook, MAX_HOOKS, type Hook } from '../lib/buildAround';
 import { readCards, seedKey, type AiRead } from '../ai/readCards';
+import type { PlayedRead } from '../lib/edhrec';
 import { keyFor, loadAiSettings, PROVIDERS, providerById, saveAiSettings } from '../ai/providers';
 
 interface Props {
@@ -21,14 +22,16 @@ interface Props {
   /** The AI read of the current cards, if there is one. */
   aiRead: AiRead | null;
   onAiRead: (read: AiRead | null) => void;
+  /** EDHREC's "played with" read of each seed, by card name. */
+  played: Record<string, PlayedRead | { error: string } | 'loading'>;
 }
 
-const KIND_LABEL: Record<Hook['kind'], string> = { ai: 'AI read', custom: 'Your phrase' };
+const KIND_LABEL: Record<Hook['kind'], string> = { played: 'Played with, from EDHREC', ai: 'AI read', custom: 'Your phrase' };
 // Adding a few cards in a row asks the AI once, after the last one.
 const READ_DELAY_MS = 600;
 
 /** Pick cards to build around; what they care about is added to the card search below, with the other filters. */
-export default function BuildAround({ deck, seeds, setSeeds, hooks, off, onToggleHook, onAddHook, colorsNote, hoverZoom, onPreview, onHidePreview, aiRead, onAiRead }: Props) {
+export default function BuildAround({ deck, seeds, setSeeds, hooks, off, onToggleHook, onAddHook, colorsNote, hoverZoom, onPreview, onHidePreview, aiRead, onAiRead, played }: Props) {
   const [name, setName] = useState('');
   const [names, setNames] = useState<string[]>([]);
   const [phrase, setPhrase] = useState('');
@@ -104,7 +107,7 @@ export default function BuildAround({ deck, seeds, setSeeds, hooks, off, onToggl
   return (
     <div className="filters build">
       <p className="small muted" style={{ margin: '0 0 8px' }}>
-        Pick the cards you want to play. What they care about is added to the search results below, together with your other filters.
+        Pick the cards you want to play. The cards decks play with them, and what they care about, are added to the search results below, together with your other filters.
       </p>
       <div className="fgroup">
         <div className="flabel">Build around</div>
@@ -131,6 +134,13 @@ export default function BuildAround({ deck, seeds, setSeeds, hooks, off, onToggl
       {seeds.length > 0 && (
         <div className="fgroup">
           <div className="flabel">What they care about</div>
+          {seeds.map(s => {
+            const r = played[s.name];
+            const text = r === 'loading' ? `Looking up the cards played with ${s.name} on EDHREC…`
+              : r && 'error' in r ? r.error
+              : r && !r.cards.length ? `EDHREC has too few Commander decks with ${s.name} to say what's played with it.` : '';
+            return text && <p key={s.name} className="small muted" style={{ margin: '0 0 4px' }}>{text}</p>;
+          })}
           <div className="ai-read small">
             {!apiKey || editingKey ? (
               <form className="row" onSubmit={saveKey}>
@@ -166,7 +176,7 @@ export default function BuildAround({ deck, seeds, setSeeds, hooks, off, onToggl
           <div className="chips">
             {hooks.map(h => (
               <button type="button" key={h.id} aria-pressed={!off.has(h.id)}
-                title={`${KIND_LABEL[h.kind]}${h.seeds.length ? ` · from ${h.seeds.join(', ')}` : ''}${h.why ? `\n${h.why}` : ''}\n${h.query}`}
+                title={`${KIND_LABEL[h.kind]}${h.seeds.length && h.kind !== 'played' ? ` · from ${h.seeds.join(', ')}` : ''}${h.why ? `\n${h.why}` : ''}${h.kind === 'played' ? '' : `\n${h.query}`}`}
                 onClick={() => onToggleHook(h.id)}>
                 {h.label}{h.seeds.length > 1 ? ` ×${h.seeds.length}` : ''}
               </button>
