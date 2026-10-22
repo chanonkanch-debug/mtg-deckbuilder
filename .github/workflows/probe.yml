@@ -1,0 +1,29 @@
+name: Probe MTGO
+on:
+  push:
+    branches: [probe-mtgo]
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Safari/537.36"
+          curl -sSL -A "$UA" https://www.mtgo.com/decklists -o index.html; wc -c index.html
+          grep -o 'href="[^"]*decklist/[^"]*"' index.html | head -5
+          grep -o '/decklists/[0-9][^"]*' index.html | sort -u | head -5
+          curl -sSL -A "$UA" https://www.mtgo.com/decklist/legacy-challenge-32-2026-10-2112856954 -o d.html; wc -c d.html
+          grep -o 'window\.MTGO[^=]*=' d.html | sort -u
+          grep -o '<script[^>]*src="[^"]*"' d.html | head
+          python3 - <<'PY'
+          import re,json
+          s=open('d.html',encoding='utf8').read()
+          m=re.search(r'window\.MTGO\.decklists\.data\s*=\s*(\{.*?\});\s*\n',s,re.S)
+          print('found' if m else 'nomatch')
+          if m:
+              d=json.loads(m.group(1)); print(list(d.keys()))
+              dl=d.get('decklists',[])
+              print(len(dl))
+              if dl: x=dl[0]; print(list(x.keys())); print(json.dumps(x.get('main_deck',[])[:1])[:800])
+          else:
+              print(s[:3000])
+          PY
