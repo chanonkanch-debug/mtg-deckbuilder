@@ -13,6 +13,7 @@ const CACHE = '.decklist-cache';
 const OUT = 'public/decks';
 const DAYS = Number(process.argv[2]) || 60;
 const GAP_MS = 500; // between requests to mtgo.com
+const TIMEOUT_MS = 60_000; // mtgo.com sometimes takes 20 seconds or more to answer
 const UA = 'mtg-deckbuilder decklist collector (github.com/chanonkanch-debug/mtg-deckbuilder)';
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -21,7 +22,8 @@ async function get(path) {
   const wait = last + GAP_MS - Date.now();
   if (wait > 0) await sleep(wait);
   last = Date.now();
-  const res = await fetch(SITE + path, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(30_000) });
+  // Without the locale cookie, mtgo.com redirects decklist pages and can land on the index instead.
+  const res = await fetch(SITE + path, { headers: { 'User-Agent': UA, Cookie: 'locale=en_US' }, signal: AbortSignal.timeout(TIMEOUT_MS) });
   if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`);
   return res.text();
 }
