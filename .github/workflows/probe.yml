@@ -16,8 +16,8 @@ jobs:
           exec > probe.txt 2>&1
           for u in /decklist/standard-league-2026-10-2211129 /decklist/modern-challenge-32-2026-10-2112856954; do curl -sS -o /dev/null -A "Mozilla/5.0" -w "curl $u %{http_code} %{size_download} %{time_total}s\n" https://www.mtgo.com$u; done
           node probe-speed.mjs
-          ls -la public/decks
+          ls -la public/decks || true
       - run: |
           git config user.name probe; git config user.email probe@example.com
-          git add -f probe.txt public/decks; git commit -m "probe output [skip ci]"; git push
+          git add -f probe.txt; git add -f public/decks || true; git commit -m "probe output [skip ci]"; git push
         if: always()
