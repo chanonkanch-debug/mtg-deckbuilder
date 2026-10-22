@@ -86,7 +86,15 @@ export const READ_SCHEMA = {
 };
 
 /** Asks the chosen AI to read the cards. */
-export async function readCards(seeds: Card[], format: string, provider: AiProvider, apiKey: string): Promise<AiRead> {
+// Reads already made this visit, so removing and re-adding a card doesn't ask again.
+const reads = new Map<string, AiRead>();
+
+export async function readCards(seeds: Card[], format: string, provider: AiProvider, apiKey: string, fresh = false): Promise<AiRead> {
+  const key = `${provider.id}|${format}|${seedKey(seeds)}`;
+  const hit = reads.get(key);
+  if (hit && !fresh) return hit;
   const text = await provider.complete({ system: SYSTEM, prompt: promptFor(seeds, format), schema: READ_SCHEMA }, apiKey);
-  return parseRead(text, seeds);
+  const read = parseRead(text, seeds);
+  reads.set(key, read);
+  return read;
 }

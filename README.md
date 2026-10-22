@@ -12,9 +12,9 @@ A Magic: The Gathering deck builder that runs entirely in the browser, using the
 - Regular art by default, with an option to show alternate arts and a printing picker per card
 - 20 results per page, adjustable card size, hover-to-enlarge, and a card view on right-click
 - **Try** on any result to preview a swap before making it
-- **Build around:** pick the cards you want to play and the search shows cards that work with them. A quick read
-  matches patterns in their rules text; **Read with AI** asks Google's Gemini (free tier) to work out subtler synergies,
-  using your own free API key, kept in your browser. Other AI services can be added in `src/ai/providers.ts`
+- **Build around:** pick the cards you want to play and Google's Gemini (free tier) reads them and works out
+  what they want; the search then shows cards that work with them. Needs a free Gemini key (see Development).
+  Other AI services can be added in `src/ai/providers.ts`
 
 **Deck**
 
@@ -51,6 +51,11 @@ Requests to Scryfall are spaced 100 ms apart as Scryfall asks, and GET responses
 **Phase 3 and beyond:** features other deck builders such as Moxfield don't offer.
 
 ## Development
+
+**Gemini key:** copy `.env.example` to `.env.local` and paste your free key from
+[Google AI Studio](https://aistudio.google.com/apikey) after `VITE_GEMINI_API_KEY=`. Git ignores `.env.local`, so the key
+stays on your computer. Restart `npm run dev` after changing it. The live site isn't built with your key; visitors
+there paste their own key in Build around.
 
 ```sh
 npm install

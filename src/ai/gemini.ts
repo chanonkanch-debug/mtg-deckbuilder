@@ -1,6 +1,7 @@
 import type { AiProvider } from './providers';
 
-// Google Gemini on the free tier, called straight from the browser with the user's own key. The SDK is loaded
+// Google Gemini on the free tier, called straight from the browser with the key from .env.local
+// (VITE_GEMINI_API_KEY) or one pasted in the page. The SDK is loaded
 // only when a read starts, so it doesn't add to the page's first load.
 const MODEL = 'gemini-3.8-flash';
 
@@ -10,6 +11,7 @@ export const gemini: AiProvider = {
   keyUrl: 'https://aistudio.google.com/apikey',
   keyHint: 'AIza…',
   cost: 'The free tier costs nothing; Google may use free-tier requests to improve its models.',
+  envKey: import.meta.env.VITE_GEMINI_API_KEY || undefined,
   async complete({ system, prompt, schema }, apiKey) {
     const { GoogleGenAI, ApiError, ThinkingLevel, FinishReason } = await import('@google/genai');
     const ai = new GoogleGenAI({ apiKey });

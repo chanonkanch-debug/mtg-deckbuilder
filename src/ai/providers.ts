@@ -14,6 +14,8 @@ export interface AiProvider {
   keyHint: string;
   /** One sentence on what a read costs. */
   cost: string;
+  /** A key set in .env.local (for example VITE_GEMINI_API_KEY), which is used instead of one pasted in the page. */
+  envKey?: string;
   /** Returns the model's JSON answer as text; throws an Error with a plain message on failure. */
   complete(req: AiRequest, apiKey: string): Promise<string>;
 }
@@ -37,3 +39,6 @@ export function saveAiSettings(s: Settings) {
 }
 
 export const providerById = (id: string) => PROVIDERS.find(p => p.id === id) ?? PROVIDERS[0];
+
+/** The key to use: the project's .env.local key if there is one, otherwise the one pasted in this browser. */
+export const keyFor = (p: AiProvider, s: Settings) => p.envKey || s.keys[p.id] || '';

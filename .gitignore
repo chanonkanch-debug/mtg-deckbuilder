@@ -2,3 +2,7 @@ node_modules
 dist
 *.log
 *.tsbuildinfo
+
+# Local secrets, such as VITE_GEMINI_API_KEY
+.env.local
+.env.*.local
