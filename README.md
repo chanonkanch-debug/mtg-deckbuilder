@@ -13,8 +13,8 @@ A Magic: The Gathering deck builder that runs entirely in the browser, using the
 - 20 results per page, adjustable card size, hover-to-enlarge, and a card view on right-click
 - **Try** on any result to preview a swap before making it
 - **Build around:** pick the cards you want to play and the search shows cards that work with them. A quick read
-  matches patterns in their rules text; **Read with AI** asks Claude to work out subtler synergies, using your own
-  Anthropic API key (kept in your browser; a few cents per read). Other AI services can be added in `src/ai/providers.ts`
+  matches patterns in their rules text; **Read with AI** asks Google's Gemini (free tier) to work out subtler synergies,
+  using your own free API key, kept in your browser. Other AI services can be added in `src/ai/providers.ts`
 
 **Deck**
 

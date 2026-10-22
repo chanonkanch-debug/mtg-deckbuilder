@@ -1,7 +1,7 @@
 // The AI services Build around can use. Each one turns a system prompt, a user prompt and a JSON schema into
 // JSON text; everything else (the prompt, parsing, searches) is shared. To add GPT or Gemini, write a file like
-// claude.ts with the same shape and add it to PROVIDERS.
-import { claude } from './claude';
+// gemini.ts with the same shape and add it to PROVIDERS.
+import { gemini } from './gemini';
 
 export interface AiRequest { system: string; prompt: string; schema: Record<string, unknown> }
 
@@ -12,11 +12,13 @@ export interface AiProvider {
   keyUrl: string;
   /** What a key looks like, for the input placeholder. */
   keyHint: string;
+  /** One sentence on what a read costs. */
+  cost: string;
   /** Returns the model's JSON answer as text; throws an Error with a plain message on failure. */
   complete(req: AiRequest, apiKey: string): Promise<string>;
 }
 
-export const PROVIDERS: AiProvider[] = [claude];
+export const PROVIDERS: AiProvider[] = [gemini];
 
 // The chosen provider and its key stay in this browser only, apart from the saved decks.
 const KEY = 'mtg-ai';
