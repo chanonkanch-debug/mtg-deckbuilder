@@ -41,11 +41,26 @@ export function eventInfo(link) {
 /** Front face names, written the way Scryfall writes them. */
 const cardName = n => n.trim().replace(/\s*\/\/?\s*/g, ' // ');
 
+/** The JSON object assigned to window.MTGO.decklists.data on an event page. */
+function pageData(html) {
+  const at = html.indexOf('window.MTGO.decklists.data');
+  const start = at < 0 ? -1 : html.indexOf('{', at);
+  if (start < 0) throw new Error(`no decklist data on the page (${html.length} characters, ${html.match(/<title>([^<]*)/)?.[1]?.trim() ?? 'no title'})`);
+  // Find the matching closing brace, skipping braces inside strings.
+  let depth = 0, inString = false;
+  for (let i = start; i < html.length; i++) {
+    const ch = html[i];
+    if (inString) { if (ch === '\\') i++; else if (ch === '"') inString = false; }
+    else if (ch === '"') inString = true;
+    else if (ch === '{') depth++;
+    else if (ch === '}' && --depth === 0) return JSON.parse(html.slice(start, i + 1));
+  }
+  throw new Error('decklist data is cut off');
+}
+
 /** Each deck's main deck card names, from an event page. */
 export function parseEvent(html) {
-  const m = html.match(/window\.MTGO\.decklists\.data\s*=\s*(\{.*?\});\s*\n/s);
-  if (!m) throw new Error('no decklist data on the page');
-  const data = JSON.parse(m[1]);
+  const data = pageData(html);
   return (data.decklists ?? []).map(d => [...new Set((d.main_deck ?? []).map(c => cardName(c.card_attributes?.card_name ?? '')).filter(Boolean))]);
 }
 
